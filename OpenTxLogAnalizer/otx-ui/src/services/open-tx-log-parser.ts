@@ -10,13 +10,16 @@ export class OpenTxLogParser {
     const fieldNames = this.readHeader(lines[0]);
 
     const logs:ILog[] = [];
-    let currentLog: ILog;
+    let currentLog: ILog|null = null;
     let prevRow: ILogRow|null = null;
     let startTimestamp: DateTime|null = null;
     let home: LatLon = {lat:0,lon:0};
+    let index = 1;
 
     for (let i = 1; i < lines.length; i++){
       const values = lines[i].split(",");
+      if (values.length != fieldNames.length)
+        continue;
       const row: any = {};
       for (let f = 0; f < fieldNames.length; f++) {
         row[fieldNames[f]] = values[f];
@@ -36,6 +39,7 @@ export class OpenTxLogParser {
       typedRow.txBattery = parseFloat(row["TxBat(V)"]);
       typedRow.rxBattery = parseFloat(row["RxBt(V)"]);
       typedRow.current = parseFloat(row["Curr(A)"]);
+      typedRow.power = Math.round(typedRow.rxBattery * typedRow.current * 10)/10;
       typedRow.capacity = parseFloat(row["Capa(mAh)"]);
       typedRow.batteryPercent = parseFloat(row["Bat_(%)"]);
       typedRow.pitchDeg = parseFloat(row["Ptch(rad)"]) * 180 / Math.PI;
@@ -46,8 +50,9 @@ export class OpenTxLogParser {
       typedRow.rudder = (parseFloat(row["Rud"]) + 1024) * 100 / 2048;
       typedRow.elevator = (parseFloat(row["Ele"]) + 1024) * 100 / 2048;
       typedRow.sats = parseInt(row["Sats"]);
-      typedRow.altitude = parseFloat(row["Alt(m)"]);
-      typedRow.gpsSpeed = parseFloat(row["GSpd(kmh)"]);
+      typedRow.altitude = Math.round(parseFloat(row["Alt(m)"])*10)/10;
+      typedRow.gpsSpeed = Math.round(parseFloat(row["GSpd(kmh)"])*10)/10;
+      typedRow.wattPerKm = Math.round(1/typedRow.gpsSpeed * typedRow.power * 10)/10;
       typedRow.distanceTraveled = 0;
       const coords = row["GPS"] as string;
       if (coords && coords.length > 5) {
@@ -60,9 +65,13 @@ export class OpenTxLogParser {
       }
 
       if (prevRow === null || (typedRow.timestamp.diff(prevRow.timestamp!).as('seconds') > 10)){
-        currentLog = {rows:[]};
+        if (currentLog && prevRow) {
+          currentLog.duration = prevRow.timestamp!.diff(startTimestamp!);
+        }
+        currentLog = {timestamp: typedRow.timestamp, rows:[]};
         logs.push(currentLog);
         startTimestamp = typedRow.timestamp;
+        index = 1;
         if (typedRow.position) {
           home = typedRow.position;
         }
@@ -74,6 +83,7 @@ export class OpenTxLogParser {
           typedRow.distanceTraveled = prevRow.distanceTraveled;
         }
       }
+      typedRow.index = index++;
 
       if (home && typedRow.position) {
         typedRow.distanceToHome = Math.round(Distance(home.lat, home.lon, typedRow.position.lat, typedRow.position.lon) * 1000);
@@ -83,6 +93,11 @@ export class OpenTxLogParser {
 
       currentLog!.rows.push(row);
       prevRow = typedRow;
+    }
+
+    console.log(prevRow);
+    if (currentLog && prevRow) {
+      currentLog.duration = prevRow.timestamp!.diff(startTimestamp!);
     }
 
     return logs;
@@ -97,9 +112,12 @@ export interface ILog {
   timestamp?: DateTime;
   duration?: Duration;
   rows: ILogRow[];
+  isSelected?: boolean;
 }
 
 export interface ILogRow {
+  wattPerKm?: number;
+  index: number;
   timecode?: number;
   timestamp?: DateTime;
   lat?: number;
@@ -109,67 +127,40 @@ export interface ILogRow {
   distanceTraveled?: number;
   Date?: DateTime
   Time?: Duration
-  //[?Name("1RSS(dB)")]
   rss1?: number;
   rss2?: number;
-  //[?Name("RQly(%)")]
   rqly?: number;
-  //[?Name("RSNR(dB)")]
   rsnr?: number;
-  //[?Name("RFMD")]
   rfmd?: number;
-  //[?Name("TRSS(dB)")]
   trss?: number;
-  //[?Name("TQly(%)")]
   tqly?: number;
-  //[?Name("TSNR(dB)")]
   tsnr?: number;
-  //[?Name("RxBt(V)")]
   rxBattery?: number;
-  //[?Name("Curr(A)")]
   current?: number;
-  //[?Name("Capa(mAh)")]
   capacity?: number;
-  //[?Name("Bat_(%)")]
+  power?: number;
   batteryPercent?: number;
-  //[?Name("Ptch(rad)")]
   pitchDeg?: number;
-  //[?Name("Roll(rad)")]
   rollDeg?: number;
-  //[?Name("Yaw(rad)")]
   yawDeg?: number;
-  //[?Name("GPS")]
   gps?: string;
-  //[?Name("GSpd(kmh)")]
   gpsSpeed?: number;
-  //[?Name("Hdg(@)")]
   heading?: number;
-  //[?Name("Alt(m)")]
   altitude?: number;
-  //[?Name("Sats")]
   sats?: number;
-  //[?Name("Rud")]
   rudder?: number;
-  //[?Name("Ele")]
   elevator?: number;
-  //[?Name("Thr")]
   throttle?: number;
-  //[?Name("Ail")]
   aileron?: number;
-  //[?Name("TxBat(V)")]
   txBattery?: number;
-  //[?Name("SA")]
-  sa?: number;
-  //[?Name("SB")]
-  sb?: number;
-  //[?Name("SC")]
-  sc?: number;
-  //[?Name("SD")]
-  sd?: number;
-  se?: number;
-  sf?: number;
-  sg?: number;
-  sh?: number;
+  SA?: number;
+  SB?: number;
+  SC?: number;
+  SD?: number;
+  SE?: number;
+  SF?: number;
+  SG?: number;
+  SH?: number;
   djiSignal?: number;
   djiChannel?: number;
   djiDelay?: number;

@@ -7,6 +7,7 @@ import {FormsModule} from "@angular/forms";
 import {HttpClientModule} from "@angular/common/http";
 import {NgxFileDropModule} from "ngx-file-drop";
 import {OpenTxLogParser} from "../services/open-tx-log-parser";
+import {NgbDropdownModule, NgbNavModule} from "@ng-bootstrap/ng-bootstrap";
 
 @NgModule({
   declarations: [
@@ -17,7 +18,9 @@ import {OpenTxLogParser} from "../services/open-tx-log-parser";
     FormsModule,
     AgGridModule.withComponents([]),
     HttpClientModule,
-    NgxFileDropModule
+    NgxFileDropModule,
+    NgbDropdownModule,
+    NgbNavModule
   ],
   providers: [OpenTxLogParser],
   bootstrap: [AppComponent]
