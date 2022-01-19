@@ -6,6 +6,7 @@ import {AgGridModule} from "ag-grid-angular";
 import {FormsModule} from "@angular/forms";
 import {HttpClientModule} from "@angular/common/http";
 import {NgxFileDropModule} from "ngx-file-drop";
+import {OpenTxLogParser} from "../services/open-tx-log-parser";
 
 @NgModule({
   declarations: [
@@ -18,7 +19,7 @@ import {NgxFileDropModule} from "ngx-file-drop";
     HttpClientModule,
     NgxFileDropModule
   ],
-  providers: [],
+  providers: [OpenTxLogParser],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

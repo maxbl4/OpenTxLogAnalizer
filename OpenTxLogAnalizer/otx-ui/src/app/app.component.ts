@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import {ColDef, GridApi, GridOptions} from "ag-grid-community";
 import {NgxFileDropEntry} from "ngx-file-drop";
+import {OpenTxLogParser} from "../services/open-tx-log-parser";
+import {DateTime} from "luxon";
 
 @Component({
   selector: 'otx-root',
@@ -42,20 +44,26 @@ export class AppComponent {
   private api: GridApi|undefined;
   gridOptions: GridOptions = {
     columnDefs: [
-      { field: 'make' },
-      { field: 'model' },
-      { field: 'price'}
+      { field: 'timecode'},
+      { field: 'timestamp', valueFormatter: params => (params.value as DateTime).toLocaleString(DateTime.TIME_24_WITH_SECONDS)},
+      { field: 'distanceTraveled' },
+      { field: 'distanceToHome' },
+      { field: 'rxBattery' },
+      { field: 'txBattery' },
+      { field: 'rss1' },
+      { field: 'rss2' },
+      { field: 'GPS'},
+      { field: 'altitude'}
     ],
-    rowData: [
-      { make: 'Toyota', model: 'Celica', price: 35000 },
-      { make: 'Ford', model: 'Mondeo', price: 32000 },
-      { make: 'Porsche', model: 'Boxter', price: 72000 }
-    ],
+    rowData: [],
     onGridReady: e => {
       this.api = e.api;
     },
     onGridSizeChanged: e => e.api.sizeColumnsToFit()
   };
+
+  constructor(private otxParser: OpenTxLogParser) {
+  }
 
 
   public dropped(files: NgxFileDropEntry[]) {
@@ -64,7 +72,9 @@ export class AppComponent {
     this.openTxLogFileName = file.name;
     file.file(async (f: File) => {
       const text = await f.text();
-      console.log(text);
+      const logs = this.otxParser.parse(text);
+      console.log(logs);
+      this.api?.setRowData(logs[0].rows);
     });
   }
 
