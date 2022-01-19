@@ -1,32 +1,78 @@
 import { Component } from '@angular/core';
+import {ColDef, GridApi, GridOptions} from "ag-grid-community";
+import {NgxFileDropEntry} from "ngx-file-drop";
 
 @Component({
   selector: 'otx-root',
   template: `
-    <!--The content below is only a placeholder and can be replaced.-->
-    <div style="text-align:center" class="content">
-      <h1>
-        Welcome to {{title}}!
-      </h1>
-      <span style="display: block">{{ title }} app is running!</span>
-      <img width="300" alt="Angular Logo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTAgMjUwIj4KICAgIDxwYXRoIGZpbGw9IiNERDAwMzEiIGQ9Ik0xMjUgMzBMMzEuOSA2My4ybDE0LjIgMTIzLjFMMTI1IDIzMGw3OC45LTQzLjcgMTQuMi0xMjMuMXoiIC8+CiAgICA8cGF0aCBmaWxsPSIjQzMwMDJGIiBkPSJNMTI1IDMwdjIyLjItLjFWMjMwbDc4LjktNDMuNyAxNC4yLTEyMy4xTDEyNSAzMHoiIC8+CiAgICA8cGF0aCAgZmlsbD0iI0ZGRkZGRiIgZD0iTTEyNSA1Mi4xTDY2LjggMTgyLjZoMjEuN2wxMS43LTI5LjJoNDkuNGwxMS43IDI5LjJIMTgzTDEyNSA1Mi4xem0xNyA4My4zaC0zNGwxNy00MC45IDE3IDQwLjl6IiAvPgogIDwvc3ZnPg==">
+    <div class="row">
+      <div class="col">
+        <ngx-file-drop dropZoneLabel="Drop files here" (onFileDrop)="dropped($event)"
+                       (onFileOver)="fileOver($event)" (onFileLeave)="fileLeave($event)">
+          <ng-template ngx-file-drop-content-tmp let-openFileSelector="openFileSelector">
+            <ng-container *ngIf="openTxLogFileName != ''">{{openTxLogFileName}}</ng-container>
+            <ng-container *ngIf="openTxLogFileName == ''">Drop Open Tx log here</ng-container>
+<!--            <button class="btn btn-primary" type="button" (click)="openFileSelector()">Browse Files</button>-->
+          </ng-template>
+        </ngx-file-drop>
+      </div>
+      <div class="col">
+        <ngx-file-drop dropZoneLabel="Drop files here" (onFileDrop)="dropped($event)"
+                       (onFileOver)="fileOver($event)" (onFileLeave)="fileLeave($event)">
+          <ng-template ngx-file-drop-content-tmp let-openFileSelector="openFileSelector">
+            Drop DJI SRT file here
+            <!--            <button class="btn btn-primary" type="button" (click)="openFileSelector()">Browse Files</button>-->
+          </ng-template>
+        </ngx-file-drop>
+      </div>
     </div>
-    <h2>Here are some links to help you start: </h2>
-    <ul>
-      <li>
-        <h2><a target="_blank" rel="noopener" href="https://angular.io/tutorial">Tour of Heroes</a></h2>
-      </li>
-      <li>
-        <h2><a target="_blank" rel="noopener" href="https://angular.io/cli">CLI Documentation</a></h2>
-      </li>
-      <li>
-        <h2><a target="_blank" rel="noopener" href="https://blog.angular.io/">Angular blog</a></h2>
-      </li>
-    </ul>
-    
+
+    <ag-grid-angular
+      style="width: 100%; height: 500px;"
+      class="ag-theme-alpine"
+      [gridOptions]="gridOptions"
+    >
+    </ag-grid-angular>
   `,
   styles: []
 })
 export class AppComponent {
   title = 'otx-ui';
+  openTxLogFileName: string = '';
+  private api: GridApi|undefined;
+  gridOptions: GridOptions = {
+    columnDefs: [
+      { field: 'make' },
+      { field: 'model' },
+      { field: 'price'}
+    ],
+    rowData: [
+      { make: 'Toyota', model: 'Celica', price: 35000 },
+      { make: 'Ford', model: 'Mondeo', price: 32000 },
+      { make: 'Porsche', model: 'Boxter', price: 72000 }
+    ],
+    onGridReady: e => {
+      this.api = e.api;
+    },
+    onGridSizeChanged: e => e.api.sizeColumnsToFit()
+  };
+
+
+  public dropped(files: NgxFileDropEntry[]) {
+    if (files.length == 0 || !files[0].fileEntry.isFile) return;
+    const file = files[0].fileEntry as FileSystemFileEntry;
+    this.openTxLogFileName = file.name;
+    file.file(async (f: File) => {
+      const text = await f.text();
+      console.log(text);
+    });
+  }
+
+  public fileOver(event:any){
+    console.log(event);
+  }
+
+  public fileLeave(event:any){
+    console.log(event);
+  }
 }
