@@ -100,6 +100,12 @@ import * as _ from 'underscore';
                   <td>{{stats?.wattPerKm?.max}}</td>
                 </tr>
                 <tr>
+                  <td>Altitude, m</td>
+                  <td>{{stats?.altitude?.min}}</td>
+                  <td>{{stats?.altitude?.avg}}</td>
+                  <td>{{stats?.altitude?.max}}</td>
+                </tr>
+                <tr>
                   <td>Distance to Home, km</td>
                   <td>{{stats?.distanceToHome?.min}}</td>
                   <td>{{stats?.distanceToHome?.avg}}</td>
@@ -212,6 +218,7 @@ export class AppComponent {
       power: stat(rows.map(x => x.power!)),
       rxBattery: stat(rows.map(x => x.rxBattery!)),
       wattPerKm: stat(rows.map(x => x.wattPerKm!)),
+      altitude: stat(rows.map(x => x.altitude!)),
       distanceToHome: stat(rows.map(x => x.distanceToHome!)),
       distanceTraveled: _.last(rows)?.distanceTraveled ?? 0
     };
@@ -219,7 +226,7 @@ export class AppComponent {
 
   exportCsv(selectedLog: ILog) {
     const a = document.createElement('a')
-    const objectUrl = URL.createObjectURL(new Blob(["some text"]));
+    const objectUrl = URL.createObjectURL(new Blob([this.otxParser.exportToCsv(selectedLog)]));
     a.href = objectUrl
     a.download = `${this.openTxLogFileName.substring(0, this.openTxLogFileName.length-4)}-enriched.csv`;
     a.click();
@@ -233,6 +240,7 @@ interface Stats {
   power: StatTriple;
   rxBattery: StatTriple;
   wattPerKm: StatTriple;
+  altitude: StatTriple;
   distanceToHome: StatTriple;
   distanceTraveled: number;
 }

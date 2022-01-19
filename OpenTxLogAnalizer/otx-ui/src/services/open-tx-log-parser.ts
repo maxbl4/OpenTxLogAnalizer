@@ -105,7 +105,15 @@ export class OpenTxLogParser {
 
   exportToCsv(log:ILog): string {
     const s = getSeparatorChars();
-    let csv = "";
+    let csv = csvFieldMap.map(x => x.title).join(s.csv) + "\n";
+    for (let r of log.rows) {
+      let row = "";
+      for (let f of csvFieldMap) {
+        const value = ((<any>r)[f.field] ?? "").toString().replace(".", s.decimal);
+        row += value + s.csv;
+      }
+      csv += row + "\n";
+    }
     return csv;
   }
 
@@ -115,53 +123,53 @@ export class OpenTxLogParser {
 }
 
 const csvFieldMap = [
-  {"index": "index"},
-  {"timecode": "timecode"},
-  {"timestamp": "timestamp"},
-  {"lat": "lat"},
-  {"lon": "lon"},
-  {"distanceToHome": "distanceToHome"},
-  {"distanceTraveled": "distanceTraveled"},
-  {"1RSS(dB)": "rss1"},
-  {"2RSS(dB)": "rss2"},
-  {"RQly(%)": "rqly"},
-  {"RSNR(dB)": "rsnr"},
-  {"ANT": "ANT"},
-  {"RFMD": "rfmd"},
-  {"TPWR(mW)": "tpwr"},
-  {"TRSS(dB)": "trss"},
-  {"TQly(%)": "tqly"},
-  {"TSNR(dB)": "tsnr"},
-  {"RxBt(V)": "rxBattery"},
-  {"Curr(A)": "current"},
-  {"Capa(mAh)": "capacity"},
-  {"power": "power"},
-  {"wattPerKm": "wattPerKm"},
-  {"Bat_(%)": "batteryPercent"},
-  {"Ptch(rad)": "pitchDeg"},
-  {"Roll(rad)": "rollDeg"},
-  {"Yaw(rad)": "yawDeg"},
-  {"FM": "FM"},
-  {"GPS": "GPS"},
-  {"GSpd(kmh)": "gpsSpeed"},
-  {"Hdg(@)": "Hdg(@)"},
-  {"Sats": "Sats"},
-  {"Rud": "rudder"},
-  {"Ele": "elevator"},
-  {"Thr": "throttle"},
-  {"Ail": "aileron"},
-  {"SA": "SA"},
-  {"SB": "SB"},
-  {"SC": "SC"},
-  {"SD": "SD"},
-  {"SE": "SE"},
-  {"SF": "SF"},
-  {"SG": "SG"},
-  {"LSW": "LSW"},
-  {"TxBat(V)": "txBattery"},
+  {title:"Index", field: "index"},
+  {title:"Timecode", field: "timecode"},
+  {title:"Timestamp", field: "timestamp"},
+  {title:"Lat", field: "lat"},
+  {title:"Lon", field: "lon"},
+  {title:"DistanceToHome", field: "distanceToHome"},
+  {title:"DistanceTraveled", field: "distanceTraveled"},
+  {title:"1RSS(dB)", field: "rss1"},
+  {title:"2RSS(dB)", field: "rss2"},
+  {title:"RQly(%)", field: "rqly"},
+  {title:"RSNR(dB)", field: "rsnr"},
+  {title:"ANT", field: "ANT"},
+  {title:"RFMD", field: "rfmd"},
+  {title:"TPWR(mW)", field: "tpwr"},
+  {title:"TRSS(dB)", field: "trss"},
+  {title:"TQly(%)", field: "tqly"},
+  {title:"TSNR(dB)", field: "tsnr"},
+  {title:"RxBt(V)", field: "rxBattery"},
+  {title:"Curr(A)", field: "current"},
+  {title:"Capa(mAh)", field: "capacity"},
+  {title:"Power", field: "power"},
+  {title:"WattPerKm", field: "wattPerKm"},
+  {title:"Bat_(%)", field: "batteryPercent"},
+  {title:"Ptch(rad)", field: "pitchDeg"},
+  {title:"Roll(rad)", field: "rollDeg"},
+  {title:"Yaw(rad)", field: "yawDeg"},
+  {title:"FM", field: "FM"},
+  {title:"GPS", field: "GPS"},
+  {title:"GSpd(kmh)", field: "gpsSpeed"},
+  {title:"Hdg(@)", field: "Hdg(@)"},
+  {title:"Sats", field: "Sats"},
+  {title:"Rud", field: "rudder"},
+  {title:"Ele", field: "elevator"},
+  {title:"Thr", field: "throttle"},
+  {title:"Ail", field: "aileron"},
+  {title:"SA", field: "SA"},
+  {title:"SB", field: "SB"},
+  {title:"SC", field: "SC"},
+  {title:"SD", field: "SD"},
+  {title:"SE", field: "SE"},
+  {title:"SF", field: "SF"},
+  {title:"LSW", field: "LSW"},
+  {title:"TxBat(V)", field: "txBattery"},
 ];
 
 function getSeparatorChars() {
+  return {decimal: ",", csv: ";"};
   const n = 1.1;
   const decimal = n.toLocaleString().substring(1, 2);
   if (decimal != ".") {
@@ -222,8 +230,6 @@ export interface ILogRow {
   SD?: number;
   SE?: number;
   SF?: number;
-  SG?: number;
-  SH?: number;
   djiSignal?: number;
   djiChannel?: number;
   djiDelay?: number;
