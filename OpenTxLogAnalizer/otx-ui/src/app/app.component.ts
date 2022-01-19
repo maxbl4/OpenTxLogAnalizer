@@ -27,7 +27,7 @@ import * as _ from 'underscore';
             <div class="d-flex w-100 justify-content-between">
               <h5 class="mb-1">{{log.timestamp?.toLocaleString(DateTime.DATETIME_SHORT_WITH_SECONDS)}}</h5>
               <small>Duration: {{log.duration?.toFormat("hh:mm:ss")}} Records: {{log.rows.length}}</small>
-              <button class="btn btn-success">Export CSV</button>
+              <button class="btn btn-success" (click)="exportCsv(log)">Export CSV</button>
             </div>
 <!--            <p class="mb-1"></p>-->
           </a>
@@ -36,7 +36,7 @@ import * as _ from 'underscore';
           <div class="d-flex w-100 justify-content-between">
             <h5 class="mb-1">{{selectedLog.timestamp?.toLocaleString(DateTime.DATETIME_SHORT_WITH_SECONDS)}}</h5>
             <small>Duration: {{selectedLog.duration?.toFormat("hh:mm:ss")}} Records: {{selectedLog.rows.length}}</small>
-            <button class="btn btn-success">Export CSV</button>
+            <button class="btn btn-success" (click)="exportCsv(selectedLog)">Export CSV</button>
           </div>
 <!--          <p class="mb-1">Duration: {{selectedLog.duration?.toFormat("hh:mm:ss")}}</p>-->
 <!--          <small>Records: {{selectedLog.rows.length}}</small>-->
@@ -215,6 +215,15 @@ export class AppComponent {
       distanceToHome: stat(rows.map(x => x.distanceToHome!)),
       distanceTraveled: _.last(rows)?.distanceTraveled ?? 0
     };
+  }
+
+  exportCsv(selectedLog: ILog) {
+    const a = document.createElement('a')
+    const objectUrl = URL.createObjectURL(new Blob(["some text"]));
+    a.href = objectUrl
+    a.download = `${this.openTxLogFileName.substring(0, this.openTxLogFileName.length-4)}-enriched.csv`;
+    a.click();
+    URL.revokeObjectURL(objectUrl);
   }
 }
 

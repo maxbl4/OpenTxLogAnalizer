@@ -28,20 +28,21 @@ export class OpenTxLogParser {
       typedRow.Date = DateTime.fromISO(row["Date"]);
       typedRow.Time = Duration.fromISOTime(row["Time"]);
       typedRow.timestamp = typedRow.Date.plus(typedRow.Time);
-      typedRow.rss1 = parseFloat(row["1RSS(dB)"]);
-      typedRow.rss2 = parseFloat(row["2RSS(dB)"]);
-      typedRow.rqly = parseFloat(row["RQly(%)"]);
-      typedRow.rsnr = parseFloat(row["RSNR(dB)"]);
-      typedRow.rfmd = parseFloat(row["RFMD"]);
-      typedRow.trss = parseFloat(row["TRSS(dB)"]);
-      typedRow.tqly = parseFloat(row["TQly(%)"]);
-      typedRow.tsnr = parseFloat(row["TSNR(dB)"]);
+      typedRow.rss1 = parseInt(row["1RSS(dB)"]);
+      typedRow.rss2 = parseInt(row["2RSS(dB)"]);
+      typedRow.rqly = parseInt(row["RQly(%)"]);
+      typedRow.rsnr = parseInt(row["RSNR(dB)"]);
+      typedRow.rfmd = parseInt(row["RFMD"]);
+      typedRow.trss = parseInt(row["TRSS(dB)"]);
+      typedRow.tqly = parseInt(row["TQly(%)"]);
+      typedRow.tsnr = parseInt(row["TSNR(dB)"]);
+      typedRow.tpwr = parseInt(row["TPWR(mW)"]);
       typedRow.txBattery = parseFloat(row["TxBat(V)"]);
       typedRow.rxBattery = parseFloat(row["RxBt(V)"]);
       typedRow.current = parseFloat(row["Curr(A)"]);
       typedRow.power = Math.round(typedRow.rxBattery * typedRow.current * 10)/10;
       typedRow.capacity = parseFloat(row["Capa(mAh)"]);
-      typedRow.batteryPercent = parseFloat(row["Bat_(%)"]);
+      typedRow.batteryPercent = Math.round(parseFloat(row["Bat_(%)"]) * 10)/10;
       typedRow.pitchDeg = parseFloat(row["Ptch(rad)"]) * 180 / Math.PI;
       typedRow.rollDeg = parseFloat(row["Roll(rad)"]) * 180 / Math.PI;
       typedRow.yawDeg = parseFloat(row["Yaw(rad)"]) * 180 / Math.PI;
@@ -95,7 +96,6 @@ export class OpenTxLogParser {
       prevRow = typedRow;
     }
 
-    console.log(prevRow);
     if (currentLog && prevRow) {
       currentLog.duration = prevRow.timestamp!.diff(startTimestamp!);
     }
@@ -103,9 +103,71 @@ export class OpenTxLogParser {
     return logs;
   }
 
+  exportToCsv(log:ILog): string {
+    const s = getSeparatorChars();
+    let csv = "";
+    return csv;
+  }
+
   readHeader(header: string): string[] {
     return header.split(",").map(x => x.trim());
   }
+}
+
+const csvFieldMap = [
+  {"index": "index"},
+  {"timecode": "timecode"},
+  {"timestamp": "timestamp"},
+  {"lat": "lat"},
+  {"lon": "lon"},
+  {"distanceToHome": "distanceToHome"},
+  {"distanceTraveled": "distanceTraveled"},
+  {"1RSS(dB)": "rss1"},
+  {"2RSS(dB)": "rss2"},
+  {"RQly(%)": "rqly"},
+  {"RSNR(dB)": "rsnr"},
+  {"ANT": "ANT"},
+  {"RFMD": "rfmd"},
+  {"TPWR(mW)": "tpwr"},
+  {"TRSS(dB)": "trss"},
+  {"TQly(%)": "tqly"},
+  {"TSNR(dB)": "tsnr"},
+  {"RxBt(V)": "rxBattery"},
+  {"Curr(A)": "current"},
+  {"Capa(mAh)": "capacity"},
+  {"power": "power"},
+  {"wattPerKm": "wattPerKm"},
+  {"Bat_(%)": "batteryPercent"},
+  {"Ptch(rad)": "pitchDeg"},
+  {"Roll(rad)": "rollDeg"},
+  {"Yaw(rad)": "yawDeg"},
+  {"FM": "FM"},
+  {"GPS": "GPS"},
+  {"GSpd(kmh)": "gpsSpeed"},
+  {"Hdg(@)": "Hdg(@)"},
+  {"Sats": "Sats"},
+  {"Rud": "rudder"},
+  {"Ele": "elevator"},
+  {"Thr": "throttle"},
+  {"Ail": "aileron"},
+  {"SA": "SA"},
+  {"SB": "SB"},
+  {"SC": "SC"},
+  {"SD": "SD"},
+  {"SE": "SE"},
+  {"SF": "SF"},
+  {"SG": "SG"},
+  {"LSW": "LSW"},
+  {"TxBat(V)": "txBattery"},
+];
+
+function getSeparatorChars() {
+  const n = 1.1;
+  const decimal = n.toLocaleString().substring(1, 2);
+  if (decimal != ".") {
+    return {decimal: ",", csv: ";"}
+  }
+  return {decimal: ".", csv: ","}
 }
 
 export interface ILog {
@@ -135,6 +197,7 @@ export interface ILogRow {
   trss?: number;
   tqly?: number;
   tsnr?: number;
+  tpwr?: number;
   rxBattery?: number;
   current?: number;
   capacity?: number;
