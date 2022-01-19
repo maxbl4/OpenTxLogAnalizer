@@ -130,7 +130,18 @@ import * as _ from 'underscore';
         <li [ngbNavItem]="3">
           <a ngbNavLink>Charts</a>
           <ng-template ngbNavContent>
-            Some charts will be here
+            <ngx-charts-line-chart
+              [view]="view"
+              [results]="results"
+              [legend]="true"
+              [showXAxisLabel]="true"
+              [showYAxisLabel]="true"
+              [xAxis]="true"
+              [yAxis]="true"
+              xAxisLabel="Index"
+              yAxisLabel=""
+            >
+            </ngx-charts-line-chart>
           </ng-template>
         </li>
       </ul>
@@ -148,6 +159,25 @@ import * as _ from 'underscore';
   `]
 })
 export class AppComponent {
+  view: [number,number] = [700, 300];
+  results = [
+    {
+      "name": "Germany",
+      "series": [
+        {
+          "name": "1990",
+          "value": 62000000
+        },
+        {
+          "name": "2010",
+          "value": 73000000
+        },
+        {
+          "name": "2011",
+          "value": 89400000
+        }
+      ]
+    }];
   DateTime = DateTime;
   title = 'otx-ui';
   openTxLogFileName: string = '';

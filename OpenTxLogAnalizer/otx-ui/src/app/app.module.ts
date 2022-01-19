@@ -8,6 +8,8 @@ import {HttpClientModule} from "@angular/common/http";
 import {NgxFileDropModule} from "ngx-file-drop";
 import {OpenTxLogParser} from "../services/open-tx-log-parser";
 import {NgbDropdownModule, NgbNavModule} from "@ng-bootstrap/ng-bootstrap";
+import {NgxChartsModule} from "@swimlane/ngx-charts";
+import {BrowserAnimationsModule} from "@angular/platform-browser/animations";
 
 @NgModule({
   declarations: [
@@ -20,7 +22,9 @@ import {NgbDropdownModule, NgbNavModule} from "@ng-bootstrap/ng-bootstrap";
     HttpClientModule,
     NgxFileDropModule,
     NgbDropdownModule,
-    NgbNavModule
+    NgbNavModule,
+    NgxChartsModule,
+    BrowserAnimationsModule,
   ],
   providers: [OpenTxLogParser],
   bootstrap: [AppComponent]
