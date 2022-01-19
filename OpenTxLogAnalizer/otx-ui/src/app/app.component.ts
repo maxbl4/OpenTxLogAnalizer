@@ -8,7 +8,7 @@ import * as _ from 'underscore';
 @Component({
   selector: 'otx-root',
   template: `
-    <div class="row">
+    <div class="row flex-container gx-0">
       <div class="col">
         <ngx-file-drop dropZoneLabel="Drop files here" (onFileDrop)="dropped($event)"
                        (onFileOver)="fileOver($event)" (onFileLeave)="fileLeave($event)">
@@ -19,7 +19,7 @@ import * as _ from 'underscore';
         </ngx-file-drop>
       </div>
     </div>
-    <div class="row">
+    <div class="row flex-container gx-0">
       <div class="col">
         <div class="list-group" *ngIf="!selectedLog">
           <a (click)="chooseLog(log)" href="#" class="list-group-item list-group-item-action" [class.active]="log.isSelected" aria-current="true"
@@ -44,13 +44,13 @@ import * as _ from 'underscore';
       </div>
     </div>
 
-    <div *ngIf="selectedLog">
+    <div *ngIf="selectedLog" class="flex-container flex-grow-1">
       <ul ngbNav #nav="ngbNav"  class="nav-tabs" >
         <li [ngbNavItem]="1">
           <a ngbNavLink>Rows</a>
           <ng-template ngbNavContent>
             <ag-grid-angular
-              style="width: 100%; height: 500px;"
+              style="width: 100%; height: 100%;"
               class="ag-theme-alpine"
               [gridOptions]="gridOptions">
             </ag-grid-angular>
@@ -100,6 +100,12 @@ import * as _ from 'underscore';
                   <td>{{stats?.wattPerKm?.max}}</td>
                 </tr>
                 <tr>
+                  <td>1RSS(dB)</td>
+                  <td>{{stats?.rss1?.min}}</td>
+                  <td>{{stats?.rss1?.avg}}</td>
+                  <td>{{stats?.rss1?.max}}</td>
+                </tr>
+                <tr>
                   <td>Altitude, m</td>
                   <td>{{stats?.altitude?.min}}</td>
                   <td>{{stats?.altitude?.avg}}</td>
@@ -129,10 +135,17 @@ import * as _ from 'underscore';
         </li>
       </ul>
 
-      <div [ngbNavOutlet]="nav" class="mt-2"></div>
+      <div [ngbNavOutlet]="nav" class="mt-2 flex-container flex-grow-1"></div>
     </div>
   `,
-  styles: []
+  styles: [`
+    :host {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+    }
+  `]
 })
 export class AppComponent {
   DateTime = DateTime;
@@ -219,6 +232,7 @@ export class AppComponent {
       rxBattery: stat(rows.map(x => x.rxBattery!)),
       wattPerKm: stat(rows.map(x => x.wattPerKm!)),
       altitude: stat(rows.map(x => x.altitude!)),
+      rss1: stat(rows.map(x => x.rss1!)),
       distanceToHome: stat(rows.map(x => x.distanceToHome!)),
       distanceTraveled: _.last(rows)?.distanceTraveled ?? 0
     };
@@ -241,6 +255,7 @@ interface Stats {
   rxBattery: StatTriple;
   wattPerKm: StatTriple;
   altitude: StatTriple;
+  rss1: StatTriple;
   distanceToHome: StatTriple;
   distanceTraveled: number;
 }
