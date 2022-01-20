@@ -130,7 +130,7 @@ export class OpenTxLogParser {
     const numberOfCells = Math.round((currentLog.rows[0].rxBattery ?? 0) / 4.2);
     const totalWh = numberOfCells * 3.7 * totalCapacity;
     for (let r of currentLog.rows) {
-      r.totalCapacity = Math.round(totalCapacity * 10)/10;
+      r.totalCapacity = Math.round(totalCapacity * 1000);
       r.totalWh = Math.round(totalWh * 10)/10;
       if (totalWh === 0 || !r.wattPerKm)
         r.estimatedRange = 0;

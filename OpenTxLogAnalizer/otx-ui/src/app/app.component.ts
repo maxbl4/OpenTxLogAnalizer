@@ -359,7 +359,7 @@ export class AppComponent {
       rss1: stat(rows.map(x => x.rss1!)),
       distanceToHome: stat(rows.map(x => x.distanceToHome!)),
       distanceTraveled: last?.distanceTraveled ?? 0,
-      totalCapacity: (last?.totalCapacity ?? 0) * 1000,
+      totalCapacity: last?.totalCapacity ?? 0,
       totalWh: last?.totalWh ?? 0,
     };
   }
