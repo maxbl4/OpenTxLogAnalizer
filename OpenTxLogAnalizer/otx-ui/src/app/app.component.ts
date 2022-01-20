@@ -4,17 +4,18 @@ import {NgxFileDropEntry} from "ngx-file-drop";
 import {ILog, OpenTxLogParser} from "../services/open-tx-log-parser";
 import {DateTime} from "luxon";
 import * as _ from 'underscore';
+import {DataManager} from "../services/data-manager";
+import {OsdItems, SrtGenerator} from "../services/srt-generator";
 
 @Component({
   selector: 'otx-root',
   template: `
     <div class="row flex-container gx-0">
       <div class="col">
-        <ngx-file-drop dropZoneLabel="Drop files here" (onFileDrop)="dropped($event)"
-                       (onFileOver)="fileOver($event)" (onFileLeave)="fileLeave($event)">
+        <ngx-file-drop dropZoneLabel="Drop files here" (onFileDrop)="dropped($event)">
           <ng-template ngx-file-drop-content-tmp let-openFileSelector="openFileSelector">
-            <ng-container *ngIf="openTxLogFileName != ''">{{openTxLogFileName}}</ng-container>
-            <ng-container *ngIf="openTxLogFileName == ''">Drop Open Tx log here</ng-container>
+            <ng-container *ngIf="data.hasData">{{data.openTxLogFileName}}</ng-container>
+            <ng-container *ngIf="!data.hasData">Drop Open Tx log here</ng-container>
           </ng-template>
         </ngx-file-drop>
       </div>
@@ -23,7 +24,7 @@ import * as _ from 'underscore';
       <div class="col">
         <div class="list-group" *ngIf="!selectedLog">
           <a (click)="chooseLog(log)" href="#" class="list-group-item list-group-item-action" [class.active]="log.isSelected" aria-current="true"
-             *ngFor="let log of logs">
+             *ngFor="let log of data.originalOtxLogs">
             <div class="d-flex w-100 justify-content-between">
               <h5 class="mb-1">{{log.timestamp?.toLocaleString(DateTime.DATETIME_SHORT_WITH_SECONDS)}}</h5>
               <small>Duration: {{log.duration?.toFormat("hh:mm:ss")}} Records: {{log.rows.length}}</small>
@@ -144,6 +145,62 @@ import * as _ from 'underscore';
             </ngx-charts-line-chart>
           </ng-template>
         </li>
+        <li [ngbNavItem]="4">
+          <a ngbNavLink>Export SRT</a>
+          <ng-template ngbNavContent>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="" id="gps" [(ngModel)]="osdItems.gps">
+              <label class="form-check-label" for="flexCheckDefault">
+                GPS Coordinates
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="" id="gps" [(ngModel)]="osdItems.dist">
+              <label class="form-check-label" for="flexCheckDefault">
+                Distance to home and total trip
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="" id="gps" [(ngModel)]="osdItems.altitude">
+              <label class="form-check-label" for="flexCheckDefault">
+                Altitude
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="" id="gps" [(ngModel)]="osdItems.gpsSpeed">
+              <label class="form-check-label" for="flexCheckDefault">
+                Speed
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="" id="gps" [(ngModel)]="osdItems.rss1">
+              <label class="form-check-label" for="flexCheckDefault">
+                RSSI and LQ
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="" id="gps" [(ngModel)]="osdItems.dji">
+              <label class="form-check-label" for="flexCheckDefault">
+                DJI Latency and Bitrate (will not show if you did not add DJI SRT file)
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="" id="gps" [(ngModel)]="osdItems.battery">
+              <label class="form-check-label" for="flexCheckDefault">
+                Battery voltage and capacity used
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="" id="gps" [(ngModel)]="osdItems.power">
+              <label class="form-check-label" for="flexCheckDefault">
+                Power, current and efficiency in estimated Watt hours consumed per 1 km
+              </label>
+            </div>
+            <button class="btn btn-success" (click)="exportSrt()">Export SRT with OSD values</button>
+            After export you can use ffmpeg to burn subtitles into your video:<br/>
+            <input type="text" readonly (click)="selectAll($event)" value="ffmpeg -i video.mp4 -vf subtitles=subtitle.srt out.mp4">
+          </ng-template>
+        </li>
       </ul>
 
       <div [ngbNavOutlet]="nav" class="mt-2 flex-container flex-grow-1"></div>
@@ -180,9 +237,7 @@ export class AppComponent {
     }];
   DateTime = DateTime;
   title = 'otx-ui';
-  openTxLogFileName: string = '';
   private api: GridApi|undefined;
-  logs: ILog[] = [];
   selectedLog?: ILog;
   gridOptions: GridOptions = {
     defaultColDef: {
@@ -215,26 +270,24 @@ export class AppComponent {
     onGridSizeChanged: e => e.api.sizeColumnsToFit()
   };
   stats?: Stats;
+  osdItems: OsdItems = {
+    gps: true,
+    dist: true,
+    altitude: true,
+    gpsSpeed: true,
+    rss1: true,
+    dji: true,
+    battery: true,
+    power: true,
+  };
 
-  constructor(private otxParser: OpenTxLogParser) {
+  constructor(public data: DataManager, private srtGenerator: SrtGenerator) {
   }
 
   public dropped(files: NgxFileDropEntry[]) {
     if (files.length == 0 || !files[0].fileEntry.isFile) return;
     const file = files[0].fileEntry as FileSystemFileEntry;
-    this.openTxLogFileName = file.name;
-    file.file(async (f: File) => {
-      const text = await f.text();
-      this.logs = this.otxParser.parse(text);
-    });
-  }
-
-  public fileOver(event:any){
-    console.log(event);
-  }
-
-  public fileLeave(event:any){
-    console.log(event);
+    this.data.processLog(file);
   }
 
   chooseLog(log: ILog) {
@@ -269,12 +322,26 @@ export class AppComponent {
   }
 
   exportCsv(selectedLog: ILog) {
-    const a = document.createElement('a')
-    const objectUrl = URL.createObjectURL(new Blob([this.otxParser.exportToCsv(selectedLog)]));
-    a.href = objectUrl
-    a.download = `${this.openTxLogFileName.substring(0, this.openTxLogFileName.length-4)}-enriched.csv`;
+    const a = document.createElement('a');
+    const objectUrl = URL.createObjectURL(new Blob([this.data.otxParser.exportToCsv(selectedLog)]));
+    a.href = objectUrl;
+    a.download = `${this.data.openTxLogFileName.substring(0, this.data.openTxLogFileName.length-4)}-enriched.csv`;
     a.click();
     URL.revokeObjectURL(objectUrl);
+  }
+
+  exportSrt() {
+    console.log(this.osdItems);
+    const a = document.createElement('a');
+    const objectUrl = URL.createObjectURL(new Blob([this.srtGenerator.exportSrt(this.selectedLog!, this.osdItems)]));
+    a.href = objectUrl;
+    a.download = `${this.data.openTxLogFileName.substring(0, this.data.openTxLogFileName.length-4)}.srt`;
+    a.click();
+    URL.revokeObjectURL(objectUrl);
+  }
+
+  selectAll(ev:any) {
+    ev.target.select();
   }
 }
 

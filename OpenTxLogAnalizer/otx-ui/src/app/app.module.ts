@@ -10,6 +10,9 @@ import {OpenTxLogParser} from "../services/open-tx-log-parser";
 import {NgbDropdownModule, NgbNavModule} from "@ng-bootstrap/ng-bootstrap";
 import {NgxChartsModule} from "@swimlane/ngx-charts";
 import {BrowserAnimationsModule} from "@angular/platform-browser/animations";
+import {DataManager} from "../services/data-manager";
+import {SrtParser} from "../services/srt-parser";
+import {SrtGenerator} from "../services/srt-generator";
 
 @NgModule({
   declarations: [
@@ -26,7 +29,7 @@ import {BrowserAnimationsModule} from "@angular/platform-browser/animations";
     NgxChartsModule,
     BrowserAnimationsModule,
   ],
-  providers: [OpenTxLogParser],
+  providers: [OpenTxLogParser, DataManager, SrtParser, SrtGenerator],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
