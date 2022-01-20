@@ -1,6 +1,7 @@
 import {DateTime, Duration} from "luxon";
 import {LatLon, Distance} from "gps";
 import {Injectable} from "@angular/core";
+import * as _ from "underscore";
 
 @Injectable()
 export class OpenTxLogParser {
@@ -68,6 +69,7 @@ export class OpenTxLogParser {
       if (prevRow === null || (typedRow.timestamp.diff(prevRow.timestamp!).as('seconds') > 10)){
         if (currentLog && prevRow) {
           currentLog.duration = prevRow.timestamp!.diff(startTimestamp!);
+          this.updateTotals(currentLog);
         }
         currentLog = {timestamp: typedRow.timestamp, rows:[]};
         logs.push(currentLog);
@@ -98,6 +100,7 @@ export class OpenTxLogParser {
 
     if (currentLog && prevRow) {
       currentLog.duration = prevRow.timestamp!.diff(startTimestamp!);
+      this.updateTotals(currentLog);
     }
 
     return logs;
@@ -119,6 +122,27 @@ export class OpenTxLogParser {
 
   readHeader(header: string): string[] {
     return header.split(",").map(x => x.trim());
+  }
+
+  private updateTotals(currentLog: ILog) {
+    if (currentLog.rows.length < 2) return;
+    const totalCapacity = (_.last(currentLog.rows)?.capacity ?? 0) / 1000;
+    const numberOfCells = Math.round((currentLog.rows[0].rxBattery ?? 0) / 4.2);
+    const totalWh = numberOfCells * 3.7 * totalCapacity;
+    for (let r of currentLog.rows) {
+      r.totalCapacity = Math.round(totalCapacity * 10)/10;
+      r.totalWh = Math.round(totalWh * 10)/10;
+      if (totalWh === 0 || !r.wattPerKm)
+        r.estimatedRange = 0;
+      else
+        r.estimatedRange = Math.round(totalWh / r.wattPerKm * 10) / 10;
+      if (totalWh === 0 || !r.power) {
+        r.estimatedFlightTime = 0;
+      }
+      else {
+        r.estimatedFlightTime = Math.round(totalWh / r.power * 60 * 10) / 10;
+      }
+    }
   }
 }
 
@@ -145,6 +169,9 @@ const csvFieldMap = [
   {title:"Capa(mAh)", field: "capacity"},
   {title:"Power", field: "power"},
   {title:"WattPerKm", field: "wattPerKm"},
+  {title:"TotalCapacity", field: "totalCapacity"},
+  {title:"EstimatedRange", field: "estimatedRange"},
+  {title:"EstimatedFlightTime", field: "estimatedFlightTime"},
   {title:"Bat_(%)", field: "batteryPercent"},
   {title:"Ptch(rad)", field: "pitchDeg"},
   {title:"Roll(rad)", field: "rollDeg"},
@@ -187,6 +214,10 @@ export interface ILog {
 
 export interface ILogRow {
   wattPerKm?: number;
+  totalCapacity?: number;
+  totalWh?: number;
+  estimatedRange?: number;
+  estimatedFlightTime?: number;
   index: number;
   timecode?: number;
   timestamp?: DateTime;
