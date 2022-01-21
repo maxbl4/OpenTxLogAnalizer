@@ -2,12 +2,14 @@
 import {SrtParser} from "./srt-parser";
 import {Injectable} from "@angular/core";
 import * as _ from "underscore";
+import {Subject} from "rxjs";
 
 @Injectable()
 export class DataManager {
   openTxLogFileName: string = "";
   originalOtxLogs: ILog[] = [];
-  srtLog?: ILog;
+  logs = new Subject<ILog[]>();
+
   get hasData():boolean {
     if (this.openTxLogFileName) return true;
     return false;
@@ -24,6 +26,7 @@ export class DataManager {
         this.originalOtxLogs = this.otxParser.parse(text);
         for (let l of this.originalOtxLogs)
           this.updateStatistics(l);
+        this.logs.next(this.originalOtxLogs);
       });
     }else alert('Only CSV files are supported');
   }
@@ -36,6 +39,7 @@ export class DataManager {
         const srtLog = this.srtParser.parse(text);
         this.joinSrtLog(otxLog, srtLog);
         this.updateStatistics(otxLog);
+        this.logs.next(this.originalOtxLogs);
         if (Math.abs(otxLog.duration!.as("seconds") - srtLog.duration!.as("seconds")) > 10)
           alert("Warning, SRT log duration is >10 seconds different to telemetry log, possibly logs mismatch");
       });

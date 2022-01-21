@@ -13,10 +13,21 @@ import {BrowserAnimationsModule} from "@angular/platform-browser/animations";
 import {DataManager} from "../services/data-manager";
 import {SrtParser} from "../services/srt-parser";
 import {SrtGenerator} from "../services/srt-generator";
+import { StatisticsViewComponent } from './statistics-view/statistics-view.component';
+import { ChartsViewComponent } from './charts-view/charts-view.component';
+import { UsageTextViewComponent } from './usage-text-view/usage-text-view.component';
+import { LogChooserViewComponent } from './log-chooser-view/log-chooser-view.component';
+import { SrtExportViewComponent } from './srt-export-view/srt-export-view.component';
+import {PersistanceService} from "../services/persistance-service";
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    StatisticsViewComponent,
+    ChartsViewComponent,
+    UsageTextViewComponent,
+    LogChooserViewComponent,
+    SrtExportViewComponent
   ],
   imports: [
     BrowserModule,
@@ -31,7 +42,7 @@ import {SrtGenerator} from "../services/srt-generator";
     NgxChartsModule,
     BrowserAnimationsModule,
   ],
-  providers: [OpenTxLogParser, DataManager, SrtParser, SrtGenerator],
+  providers: [OpenTxLogParser, DataManager, SrtParser, SrtGenerator, PersistanceService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

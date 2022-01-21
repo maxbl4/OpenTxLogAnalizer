@@ -103,7 +103,6 @@ export class OpenTxLogParser {
       currentLog.duration = prevRow.timestamp!.diff(startTimestamp!);
       this.updateTotals(currentLog);
     }
-
     return logs;
   }
 
