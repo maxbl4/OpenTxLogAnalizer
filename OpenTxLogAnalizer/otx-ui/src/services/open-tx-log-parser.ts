@@ -56,6 +56,7 @@ export class OpenTxLogParser {
       typedRow.altitude = Math.round(parseFloat(row["Alt(m)"])*10)/10;
       typedRow.gpsSpeed = Math.round(parseFloat(row["GSpd(kmh)"])*10)/10;
       typedRow.wattPerKm = Math.round(1/typedRow.gpsSpeed * typedRow.power * 10)/10;
+      if (isNaN(typedRow.wattPerKm) || !isFinite(typedRow.wattPerKm)) typedRow.wattPerKm = 0;
       typedRow.distanceTraveled = 0;
       const coords = row["GPS"] as string;
       if (coords && coords.length > 5) {

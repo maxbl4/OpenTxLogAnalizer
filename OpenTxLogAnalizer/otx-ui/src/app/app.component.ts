@@ -72,7 +72,7 @@ import {LogChooserViewComponent} from "./log-chooser-view/log-chooser-view.compo
         <li [ngbNavItem]="4">
           <a ngbNavLink>Charts</a>
           <ng-template ngbNavContent>
-            <otx-charts-view></otx-charts-view>
+            <otx-charts-view [selectedLog]="selectedLog"></otx-charts-view>
           </ng-template>
         </li>
       </ul>
