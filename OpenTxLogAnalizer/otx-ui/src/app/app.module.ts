@@ -7,7 +7,7 @@ import {FormsModule} from "@angular/forms";
 import {HttpClientModule} from "@angular/common/http";
 import {NgxFileDropModule} from "ngx-file-drop";
 import {OpenTxLogParser} from "../services/open-tx-log-parser";
-import {NgbDropdownModule, NgbNavModule, NgbTooltipModule} from "@ng-bootstrap/ng-bootstrap";
+import {NgbDropdownModule, NgbModalModule, NgbNavModule, NgbTooltipModule} from "@ng-bootstrap/ng-bootstrap";
 import {NgxChartsModule} from "@swimlane/ngx-charts";
 import {BrowserAnimationsModule} from "@angular/platform-browser/animations";
 import {DataManager} from "../services/data-manager";
@@ -27,6 +27,7 @@ import {SrtGenerator} from "../services/srt-generator";
     NgbDropdownModule,
     NgbNavModule,
     NgbTooltipModule,
+    NgbModalModule,
     NgxChartsModule,
     BrowserAnimationsModule,
   ],

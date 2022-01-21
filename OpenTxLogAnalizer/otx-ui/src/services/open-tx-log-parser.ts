@@ -2,6 +2,7 @@ import {DateTime, Duration} from "luxon";
 import {LatLon, Distance} from "gps";
 import {Injectable} from "@angular/core";
 import * as _ from "underscore";
+import {Stats} from "./data-manager";
 
 @Injectable()
 export class OpenTxLogParser {
@@ -193,6 +194,11 @@ const csvFieldMap = [
   {title:"SF", field: "SF"},
   {title:"LSW", field: "LSW"},
   {title:"TxBat(V)", field: "txBattery"},
+  {title:"DjiDelay", field: "djiDelay"},
+  {title:"DjiBitrate", field: "djiBitrate"},
+  {title:"DjiSignal", field: "djiSignal"},
+  {title:"DjiChannel", field: "djiChannel"},
+  {title:"DjiGoggleBattery", field: "djiGoggleBattery"},
 ];
 
 function getSeparatorChars() {
@@ -210,6 +216,8 @@ export interface ILog {
   duration?: Duration;
   rows: ILogRow[];
   isSelected?: boolean;
+  srtFileName?: string;
+  stats?: Stats;
 }
 
 export interface ILogRow {
