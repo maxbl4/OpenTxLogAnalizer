@@ -8,6 +8,11 @@ import {PersistanceService} from "../../services/persistance-service";
     <div class="container-fluid flex-container flex-grow-1">
       <div class="row">
         <div class="col">
+          Include rows from <input [(ngModel)]="startRow" (change)="chartSelectionChanged()"/> to <input [(ngModel)]="endRow" (change)="chartSelectionChanged()"/>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
           <ul class="list-inline">
             <li class="list-inline-item">
               <div class="form-check">
@@ -83,8 +88,16 @@ import {PersistanceService} from "../../services/persistance-service";
   ]
 })
 export class ChartsViewComponent implements OnInit {
-  @Input() selectedLog?: ILog;
+  private _selectedLog?: ILog;
+  @Input() get selectedLog() {return this._selectedLog;}
+  set selectedLog(v: ILog|undefined) {
+    this._selectedLog = v;
+    this.startRow = 0;
+    this.endRow = v?.rows.length ?? 0;
+  }
 
+  startRow = 0;
+  endRow = 0;
   chartsToDraw: ChartsToDraw = {gpsSpeed: true};
 
   view = [undefined, 500];
@@ -101,27 +114,27 @@ export class ChartsViewComponent implements OnInit {
     this.persistance.chartsToDraw = this.chartsToDraw;
     const data = [];
     if (this.chartsToDraw.gpsSpeed) {
-      const series = {name: "Speed", series: this.selectedLog?.rows.map(x => {return {name: x.timecode, value: x.gpsSpeed ?? 0}})};
+      const series = {name: "Speed", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.timecode, value: x.gpsSpeed ?? 0}})};
       data.push(series);
     }
     if (this.chartsToDraw.power) {
-      const series = {name: "Power", series: this.selectedLog?.rows.map(x => {return {name: x.timecode, value: x.power ?? 0}})};
+      const series = {name: "Power", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.timecode, value: x.power ?? 0}})};
       data.push(series);
     }
     if (this.chartsToDraw.rxBattery) {
-      const series = {name: "Rx Battery", series: this.selectedLog?.rows.map(x => {return {name: x.timecode, value: x.rxBattery ?? 0}})};
+      const series = {name: "Rx Battery", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.timecode, value: x.rxBattery ?? 0}})};
       data.push(series);
     }
     if (this.chartsToDraw.wattPerKm) {
-      const series = {name: "Wh/km", series: this.selectedLog?.rows.map(x => {return {name: x.timecode, value: x.wattPerKm ?? 0}})};
+      const series = {name: "Wh/km", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.timecode, value: x.wattPerKm ?? 0}})};
       data.push(series);
     }
     if (this.chartsToDraw.estimatedRange) {
-      const series = {name: "Est. range", series: this.selectedLog?.rows.map(x => {return {name: x.timecode, value: x.estimatedRange ?? 0}})};
+      const series = {name: "Est. range", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.timecode, value: x.estimatedRange ?? 0}})};
       data.push(series);
     }
     if (this.chartsToDraw.estimatedFlightTime) {
-      const series = {name: "Est. time", series: this.selectedLog?.rows.map(x => {return {name: x.timecode, value: x.estimatedFlightTime ?? 0}})};
+      const series = {name: "Est. time", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.timecode, value: x.estimatedFlightTime ?? 0}})};
       data.push(series);
     }
     this.results = <any>data;
