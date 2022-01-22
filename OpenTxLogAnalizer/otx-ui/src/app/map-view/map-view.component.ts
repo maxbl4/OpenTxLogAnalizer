@@ -54,20 +54,32 @@ export class MapViewComponent implements OnInit {
     const minRssi = (<ILogRow>_.min(rows, x => x.rss1)).rss1 ?? 0;
     const maxRssi = (<ILogRow>_.max(rows, x => x.rss1)).rss1 ?? 0;
     const rssRange = maxRssi - minRssi;
-    console.log(minRssi, maxRssi, rssRange);
+    let currentRss = rows[0].rss1!;
+    let minShown = false;
     for (let i = 0; i < rows.length - 1; i++) {
       const rss1 = <number>rows[i].rss1;
-      const t = new ymaps.Polyline([[rows[i].lat, rows[i].lon], [rows[i + 1].lat, rows[i + 1].lon]], undefined, {strokeWidth:4, strokeColor: this.getMultiColor((rss1 - minRssi)/rssRange)});
+      const t = new ymaps.Polyline([[rows[i].lat, rows[i].lon], [rows[i + 1].lat, rows[i + 1].lon]], {balloonContent : rss1.toString()},
+        {strokeWidth:6, strokeColor: this.getMultiColor((rss1 - minRssi)/rssRange)});
       this.myMap.geoObjects.add(t);
+      if (Math.abs(currentRss - rss1)/rssRange > 0.2) {
+        const myPlacemark = new ymaps.Placemark([rows[i].lat, rows[i].lon], {iconCaption: rss1.toString()});
+        this.myMap.geoObjects.add(myPlacemark);
+        currentRss = rss1;
+      }
+      if (rss1 == minRssi && !minShown) {
+        const myPlacemark = new ymaps.Placemark([rows[i].lat, rows[i].lon], {iconCaption: "MIN: " + rss1.toString()});
+        this.myMap.geoObjects.add(myPlacemark);
+        minShown = true;
+      }
     }
   }
 
   private getMultiColor(value:number) {
-    return this.colorPart(1-value) + this.colorPart(value) + "00";
+    return this.colorPart(1 - value) + this.colorPart(value) + "00";
   }
 
   private colorPart(value: number) {
-    const s = Math.round(value*255).toString(16);
+    const s = Math.round(value * 255).toString(16);
     if (s.length == 1)
       return "0" + s;
     return s;
