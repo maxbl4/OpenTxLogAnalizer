@@ -75,6 +75,12 @@ import {LogChooserViewComponent} from "./log-chooser-view/log-chooser-view.compo
             <otx-charts-view [selectedLog]="selectedLog"></otx-charts-view>
           </ng-template>
         </li>
+        <li [ngbNavItem]="5">
+          <a ngbNavLink>Map</a>
+          <ng-template ngbNavContent>
+            <otx-map-view [selectedLog]="selectedLog"></otx-map-view>
+          </ng-template>
+        </li>
       </ul>
 
       <div [ngbNavOutlet]="nav" class="mt-2 flex-container flex-grow-1"></div>

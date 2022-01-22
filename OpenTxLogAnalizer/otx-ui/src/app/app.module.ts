@@ -19,6 +19,7 @@ import { UsageTextViewComponent } from './usage-text-view/usage-text-view.compon
 import { LogChooserViewComponent } from './log-chooser-view/log-chooser-view.component';
 import { SrtExportViewComponent } from './srt-export-view/srt-export-view.component';
 import {PersistanceService} from "../services/persistance-service";
+import { MapViewComponent } from './map-view/map-view.component';
 
 @NgModule({
   declarations: [
@@ -27,7 +28,8 @@ import {PersistanceService} from "../services/persistance-service";
     ChartsViewComponent,
     UsageTextViewComponent,
     LogChooserViewComponent,
-    SrtExportViewComponent
+    SrtExportViewComponent,
+    MapViewComponent
   ],
   imports: [
     BrowserModule,

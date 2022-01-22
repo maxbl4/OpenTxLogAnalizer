@@ -114,27 +114,27 @@ export class ChartsViewComponent implements OnInit {
     this.persistance.chartsToDraw = this.chartsToDraw;
     const data = [];
     if (this.chartsToDraw.gpsSpeed) {
-      const series = {name: "Speed", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.timecode, value: x.gpsSpeed ?? 0}})};
+      const series = {name: "Speed", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.gpsSpeed ?? 0}})};
       data.push(series);
     }
     if (this.chartsToDraw.power) {
-      const series = {name: "Power", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.timecode, value: x.power ?? 0}})};
+      const series = {name: "Power", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.power ?? 0}})};
       data.push(series);
     }
     if (this.chartsToDraw.rxBattery) {
-      const series = {name: "Rx Battery", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.timecode, value: x.rxBattery ?? 0}})};
+      const series = {name: "Rx Battery", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.rxBattery ?? 0}})};
       data.push(series);
     }
     if (this.chartsToDraw.wattPerKm) {
-      const series = {name: "Wh/km", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.timecode, value: x.wattPerKm ?? 0}})};
+      const series = {name: "Wh/km", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.wattPerKm ?? 0}})};
       data.push(series);
     }
     if (this.chartsToDraw.estimatedRange) {
-      const series = {name: "Est. range", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.timecode, value: x.estimatedRange ?? 0}})};
+      const series = {name: "Est. range", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.estimatedRange ?? 0}})};
       data.push(series);
     }
     if (this.chartsToDraw.estimatedFlightTime) {
-      const series = {name: "Est. time", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.timecode, value: x.estimatedFlightTime ?? 0}})};
+      const series = {name: "Est. time", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.estimatedFlightTime ?? 0}})};
       data.push(series);
     }
     this.results = <any>data;

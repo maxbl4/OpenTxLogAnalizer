@@ -3,9 +3,10 @@ import {SrtParser} from "./srt-parser";
 import {Injectable} from "@angular/core";
 import * as _ from "underscore";
 import {Subject} from "rxjs";
+import {PersistanceService} from "./persistance-service";
 
 @Injectable()
-export class DataManager {
+export class DataManager implements IData {
   openTxLogFileName: string = "";
   originalOtxLogs: ILog[] = [];
   logs = new Subject<ILog[]>();
@@ -15,7 +16,8 @@ export class DataManager {
     return false;
   }
 
-  constructor(public otxParser: OpenTxLogParser, public srtParser: SrtParser) {
+  constructor(public otxParser: OpenTxLogParser, public srtParser: SrtParser, private persistance: PersistanceService) {
+    //this.loadData();
   }
 
   loadOpenTxLog(file: FileSystemFileEntry) {
@@ -27,6 +29,7 @@ export class DataManager {
         for (let l of this.originalOtxLogs)
           this.updateStatistics(l);
         this.logs.next(this.originalOtxLogs);
+        this.saveData();
       });
     }else alert('Only CSV files are supported');
   }
@@ -40,6 +43,7 @@ export class DataManager {
         this.joinSrtLog(otxLog, srtLog);
         this.updateStatistics(otxLog);
         this.logs.next(this.originalOtxLogs);
+        this.saveData();
         if (Math.abs(otxLog.duration!.as("seconds") - srtLog.duration!.as("seconds")) > 10)
           alert("Warning, SRT log duration is >10 seconds different to telemetry log, possibly logs mismatch");
       });
@@ -89,6 +93,16 @@ export class DataManager {
       totalWh: last?.totalWh ?? 0,
     };
   }
+
+  private loadData() {
+    const t = this.persistance.load<IData>("data-manager-data");
+    if (t)
+      Object.assign(this, t);
+  }
+
+  private saveData() {
+    this.persistance.save<IData>("data-manager-data", {openTxLogFileName: this.openTxLogFileName, originalOtxLogs: this.originalOtxLogs});
+  }
 }
 
 export interface Stats {
@@ -114,6 +128,11 @@ export interface StatTriple {
   min: number;
   avg: number;
   max: number;
+}
+
+export interface IData {
+  openTxLogFileName: string;
+  originalOtxLogs: ILog[];
 }
 
 function stat(items:number[]): StatTriple {
