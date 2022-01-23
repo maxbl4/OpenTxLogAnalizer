@@ -101,7 +101,7 @@ export class DataManager implements IData {
   }
 
   private saveData() {
-    this.persistance.save<IData>("data-manager-data", {openTxLogFileName: this.openTxLogFileName, originalOtxLogs: this.originalOtxLogs});
+    //this.persistance.save<IData>("data-manager-data", {openTxLogFileName: this.openTxLogFileName, originalOtxLogs: this.originalOtxLogs});
   }
 }
 

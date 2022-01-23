@@ -1,21 +1,38 @@
 import {Component, Input, OnInit} from '@angular/core';
 import {ILog, ILogRow} from "../../services/open-tx-log-parser";
 import * as _ from "underscore";
-import {LatLon, Distance} from "gps";
+import {Distance} from "gps";
 
 @Component({
   selector: 'otx-map-view',
   template: `
-    <select class="form-select" aria-label="Default select example" [(ngModel)]="strokeWidth">
-      <option value="4">4</option>
-      <option value="6">6</option>
-      <option value="8">8</option>
-      <option value="10">10</option>
-      <option value="12">12</option>
-      <option value="14">14</option>
-      <option value="16">16</option>
-    </select>
-    <div id="map" style="width: 100%; height: 800px"></div>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-auto">
+          <div class="mb-3">
+            <label for="formGroupExampleInput" class="form-label">Value to draw</label>
+            <select class="form-select" multiple [(ngModel)]="selectedStat" (change)="drawTrack()" [size]="stats.length">
+              <option [value]="s" *ngFor="let s of stats">{{s.name}}</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="formGroupExampleInput" class="form-label">Line Width</label>
+            <select class="form-select" aria-label="Default select example" [(ngModel)]="strokeWidth" (change)="drawTrack()">
+              <option value="4">4</option>
+              <option value="6">6</option>
+              <option value="8">8</option>
+              <option value="10">10</option>
+              <option value="12">12</option>
+              <option value="14">14</option>
+              <option value="16">16</option>
+            </select>
+          </div>
+        </div>
+        <div class="col">
+          <div id="map" style="width: 100%; height: 800px"></div>
+        </div>
+      </div>
+    </div>
   `,
   styles: [`
     :host {
@@ -26,14 +43,29 @@ import {LatLon, Distance} from "gps";
   `]
 })
 export class MapViewComponent implements OnInit {
+  stats = [
+    {name: "Speed", field: "gpsSpeed"},
+    {name: "Altitude", field: "altitude"},
+    {name: "Pitch Degrees", field: "pitchDeg"},
+    {name: "Throttle %", field: "throttle"},
+    {name: "Home", field: "distanceToHome"},
+    {name: "Stats Count", field: "sats"},
+    {name: "Rx Battery", field: "rxBattery"},
+    {name: "Current", field: "current"},
+    {name: "Capacity", field: "capacity"},
+    {name: "Watt hour per km", field: "wattPerKm", lowIsBetter: true},
+    {name: "Estimated Range", field: "estimatedRange"},
+    {name: "Estimated Time", field: "estimatedFlightTime"},
+    {name: "RSSI dbm", field: "rss1"},
+    {name: "LQ", field: "rqly"},
+    {name: "Tx Power", field: "tpwr", lowIsBetter: true},
+    {name: "DJI Latency", field: "djiDelay", lowIsBetter: true},
+    {name: "DJI Bitrate", field: "djiBitrate"},
+  ];
   private _selectedLog?: ILog;
   private myMap: any;
-  _strokeWidth = 14;
-  get strokeWidth() {return this._strokeWidth;}
-  set strokeWidth(v: number) {
-    this._strokeWidth = parseInt(<any>v);
-    this.drawTrack(false);
-  }
+  selectedStat = [this.stats[0]];
+  strokeWidth = 14;
   @Input() get selectedLog() {return this._selectedLog;}
   set selectedLog(v: ILog|undefined) {
     this._selectedLog = v;
@@ -46,7 +78,6 @@ export class MapViewComponent implements OnInit {
     ymaps.ready(() => {
       this.myMap = new ymaps.Map("map", {
         center: [55.76, 37.64],
-        // от 0 (весь мир) до 19.
         zoom: 7
       });
       this.myMap.setType('yandex#hybrid')
@@ -54,7 +85,7 @@ export class MapViewComponent implements OnInit {
     });
   }
 
-  private drawTrack(setCenter:boolean) {
+  drawTrack(setCenter:boolean = false) {
     if (!this._selectedLog || !this.myMap) return;
     this.myMap.geoObjects.removeAll();
     let coords = this.selectedLog?.rows.map(x => [x.lat, x.lon]) ?? [];
@@ -69,25 +100,35 @@ export class MapViewComponent implements OnInit {
 
   private drawMulticolorTrack() {
     const rows = this.selectedLog?.rows ?? [];
-    const minRssi = (<ILogRow>_.min(rows, x => x.rss1)).rss1 ?? 0;
-    const maxRssi = (<ILogRow>_.max(rows, x => x.rss1)).rss1 ?? 0;
-    const rssRange = maxRssi - minRssi;
-    let currentRss = rows[0].rss1!;
-    let minShown = false;
+    const selectedStat = this.selectedStat[0];
+    const minRow = <ILogRow>_.min(rows, (x:any) => x[selectedStat.field]);
+    const maxRow = <ILogRow>_.max(rows, (x:any) => x[selectedStat.field]);
+    const minStat = (<any>minRow)[selectedStat.field] ?? 0;
+    const maxStat = (<any>maxRow)[selectedStat.field] ?? 0;
+    const statRange = maxStat - minStat;
+    let minShown = false, maxShown = false;
+    const markerSpacing = Math.round(rows.length / 5);
     for (let i = 0; i < rows.length - 1; i++) {
-      const rss1 = <number>rows[i].rss1;
-      const t = new ymaps.Polyline([[rows[i].lat, rows[i].lon], [rows[i + 1].lat, rows[i + 1].lon]], {balloonContent : rss1.toString(), hintContent: rss1.toString()},
-        {strokeWidth: this.strokeWidth, strokeColor: this.getMultiColor((rss1 - minRssi)/rssRange)});
+      const stat = (<any>rows[i])[selectedStat.field];
+      let statValue = (stat - minStat)/statRange;
+      if (selectedStat.lowIsBetter)
+        statValue = 1 - statValue;
+      const t = new ymaps.Polyline([[rows[i].lat, rows[i].lon], [rows[i + 1].lat, rows[i + 1].lon]], {balloonContent : stat.toString(), hintContent: stat.toString()},
+        {strokeWidth: this.strokeWidth, strokeColor: this.getMultiColor(statValue)});
       this.myMap.geoObjects.add(t);
-      if (Math.abs(currentRss - rss1)/rssRange > 0.2) {
-        const myPlacemark = new ymaps.Placemark([rows[i].lat, rows[i].lon], {iconCaption: rss1.toString()});
+      if (i % markerSpacing == 0) {
+        const myPlacemark = new ymaps.Placemark([rows[i].lat, rows[i].lon], {iconCaption: stat.toString()});
         this.myMap.geoObjects.add(myPlacemark);
-        currentRss = rss1;
       }
-      if (rss1 == minRssi && !minShown) {
-        const myPlacemark = new ymaps.Placemark([rows[i].lat, rows[i].lon], {iconCaption: "MIN: " + rss1.toString()});
+      if (i == minRow.index && !minShown) {
+        const myPlacemark = new ymaps.Placemark([rows[i].lat, rows[i].lon], {iconCaption: "MIN: " + stat.toString()});
         this.myMap.geoObjects.add(myPlacemark);
         minShown = true;
+      }
+      if (i == maxRow.index && !maxShown) {
+        const myPlacemark = new ymaps.Placemark([rows[i].lat, rows[i].lon], {iconCaption: "MAX: " + stat.toString()});
+        this.myMap.geoObjects.add(myPlacemark);
+        maxShown = true;
       }
     }
   }
@@ -138,14 +179,9 @@ export class MapViewComponent implements OnInit {
     if (dist < 500) zoom = 17;
     if (dist < 300) zoom = 18;
     if (dist < 100) zoom = 19;
-    console.log(dist, zoom);
 
     return {center: [(minLat + maxLat) / 2, (minLon + maxLon) / 2], zoom: zoom };
   }
 }
 
 declare const ymaps: any;
-
-function init(){
-
-}
