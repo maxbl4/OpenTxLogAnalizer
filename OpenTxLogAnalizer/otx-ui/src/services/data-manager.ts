@@ -3,20 +3,21 @@ import {SrtParser} from "./srt-parser";
 import {Injectable} from "@angular/core";
 import * as _ from "underscore";
 import {Subject} from "rxjs";
-import {PersistanceService} from "./persistance-service";
+import {PersistenceService} from "./persistence.service";
 
 @Injectable()
 export class DataManager implements IData {
   openTxLogFileName: string = "";
   originalOtxLogs: ILog[] = [];
   logs = new Subject<ILog[]>();
+  tabPaneHeight: number = 0;
 
   get hasData():boolean {
     if (this.openTxLogFileName) return true;
     return false;
   }
 
-  constructor(public otxParser: OpenTxLogParser, public srtParser: SrtParser, private persistance: PersistanceService) {
+  constructor(public otxParser: OpenTxLogParser, public srtParser: SrtParser, private persistance: PersistenceService) {
     //this.loadData();
   }
 

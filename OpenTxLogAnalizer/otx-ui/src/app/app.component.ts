@@ -1,11 +1,11 @@
-import {Component, ViewChild} from '@angular/core';
+import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import {GridApi, GridOptions} from "ag-grid-community";
 import {NgxFileDropEntry} from "ngx-file-drop";
 import {ILog} from "../services/open-tx-log-parser";
 import {DateTime} from "luxon";
 import {DataManager} from "../services/data-manager";
-import {SrtGenerator} from "../services/srt-generator";
 import {LogChooserViewComponent} from "./log-chooser-view/log-chooser-view.component";
+import {PersistenceService} from "../services/persistence.service";
 
 @Component({
   selector: 'otx-root',
@@ -29,12 +29,13 @@ import {LogChooserViewComponent} from "./log-chooser-view/log-chooser-view.compo
 
     <div class="row flex-container gx-0">
       <div class="col">
-        <otx-log-chooser-view #logChooser [(selectedLog)]="selectedLog" [logs]="data.originalOtxLogs" (srtLogDropped)="addSrtLog($event)"></otx-log-chooser-view>
+        <otx-log-chooser-view #logChooser [(selectedLog)]="selectedLog" (selectedLogChange)="checkWindowSize()" [logs]="data.originalOtxLogs" (srtLogDropped)="addSrtLog($event)"></otx-log-chooser-view>
       </div>
     </div>
 
     <div *ngIf="selectedLog" class="flex-container flex-grow-1">
-      <ul ngbNav #nav="ngbNav" class="nav-tabs">
+      <ul ngbNav #nav="ngbNav" class="nav-tabs" (shown)="checkWindowSize()" [(activeId)]="selectedTabPane"
+        (activeIdChange)="persistence.selectedTabPane = $event">
         <li [ngbNavItem]="1">
           <a ngbNavLink>Export Results</a>
           <ng-template ngbNavContent>
@@ -83,7 +84,7 @@ import {LogChooserViewComponent} from "./log-chooser-view/log-chooser-view.compo
         </li>
       </ul>
 
-      <div [ngbNavOutlet]="nav" class="mt-2 flex-container flex-grow-1"></div>
+      <div #tabPane [ngbNavOutlet]="nav" class="mt-2 flex-container flex-grow-1"></div>
     </div>
   `,
   styles: [`
@@ -95,9 +96,11 @@ import {LogChooserViewComponent} from "./log-chooser-view/log-chooser-view.compo
     }
   `]
 })
-export class AppComponent {
+export class AppComponent implements OnInit{
   @ViewChild('logChooser')
   logChooser?: LogChooserViewComponent;
+  @ViewChild('tabPane', { read: ElementRef })
+  tabPane?: ElementRef;
   private api: GridApi | undefined;
   selectedLog?: ILog;
   gridOptions: GridOptions = {
@@ -138,8 +141,16 @@ export class AppComponent {
     },
     onGridSizeChanged: e => e.api.sizeColumnsToFit()
   };
+  selectedTabPane: number = 1;
 
-  constructor(public data: DataManager, private srtGenerator: SrtGenerator) {
+  constructor(public data: DataManager, public persistence: PersistenceService) {
+    this.selectedTabPane = persistence.selectedTabPane ?? 1;
+    console.log(this.selectedTabPane);
+    window.addEventListener('resize', e => this.checkWindowSize(), true);
+  }
+
+  ngOnInit(): void {
+      this.checkWindowSize();
   }
 
   public openOtxLog(files: NgxFileDropEntry[]) {
@@ -160,5 +171,13 @@ export class AppComponent {
     a.download = `${this.data.openTxLogFileName.substring(0, this.data.openTxLogFileName.length - 4)}-enriched.csv`;
     a.click();
     URL.revokeObjectURL(objectUrl);
+  }
+
+  checkWindowSize(fromTimeout = false) {
+    if (!fromTimeout) {
+      setTimeout(() => this.checkWindowSize(true));
+      return;
+    }
+    this.data.tabPaneHeight = window.visualViewport.height - (this.tabPane?.nativeElement?.getBoundingClientRect()?.y ?? 0) - 20;
   }
 }

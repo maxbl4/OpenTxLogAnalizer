@@ -1,6 +1,7 @@
 import {Component, Input, OnInit} from '@angular/core';
 import {ILog} from "../../services/open-tx-log-parser";
-import {PersistanceService} from "../../services/persistance-service";
+import {PersistenceService} from "../../services/persistence.service";
+import {knownStats, StatDesc} from "../map-view/map-view.component";
 
 @Component({
   selector: 'otx-charts-view',
@@ -11,70 +12,28 @@ import {PersistanceService} from "../../services/persistance-service";
           Include rows from <input [(ngModel)]="startRow" (change)="chartSelectionChanged()"/> to <input [(ngModel)]="endRow" (change)="chartSelectionChanged()"/>
         </div>
       </div>
-      <div class="row">
-        <div class="col">
-          <ul class="list-inline">
-            <li class="list-inline-item">
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" value="" id="gps" [(ngModel)]="chartsToDraw.gpsSpeed" (change)="chartSelectionChanged()">
-                <label class="form-check-label" for="flexCheckDefault">
-                  Speed km/h
-                </label>
-              </div>
-            </li>
-            <li class="list-inline-item">
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" value="" id="gps" [(ngModel)]="chartsToDraw.rxBattery" (change)="chartSelectionChanged()">
-                <label class="form-check-label" for="flexCheckDefault">
-                  Rx Battery V
-                </label>
-              </div>
-            </li>
-            <li class="list-inline-item">
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" value="" id="gps" [(ngModel)]="chartsToDraw.power" (change)="chartSelectionChanged()">
-                <label class="form-check-label" for="flexCheckDefault">
-                  Power W
-                </label>
-              </div>
-            </li>
-            <li class="list-inline-item">
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" value="" id="gps" [(ngModel)]="chartsToDraw.wattPerKm" (change)="chartSelectionChanged()">
-                <label class="form-check-label" for="flexCheckDefault">
-                  Watt hour per km
-                </label>
-              </div>
-            </li>
-            <li class="list-inline-item">
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" value="" id="gps" [(ngModel)]="chartsToDraw.estimatedRange" (change)="chartSelectionChanged()">
-                <label class="form-check-label" for="flexCheckDefault">
-                  Estimated range km
-                </label>
-              </div>
-            </li>
-            <li class="list-inline-item">
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" value="" id="gps" [(ngModel)]="chartsToDraw.estimatedFlightTime" (change)="chartSelectionChanged()">
-                <label class="form-check-label" for="flexCheckDefault">
-                  Estimated time minutes
-                </label>
-              </div>
-            </li>
 
-          </ul>
-          <ngx-charts-line-chart
-            [results]="results"
-            [legend]="true"
-            [showXAxisLabel]="true"
-            [showYAxisLabel]="true"
-            [xAxis]="true"
-            [yAxis]="true"
-            xAxisLabel="Index"
-            yAxisLabel=""
-          >
-          </ngx-charts-line-chart>
+      <div class="grid-two-panes flex-grow-1">
+        <div class="grid-left-pane">
+          <div class="mb-3">
+            <label for="formGroupExampleInput" class="form-label">Value to draw</label>
+            <select class="form-select" multiple [(ngModel)]="selectedStat" (change)="chartSelectionChanged()" [size]="stats.length">
+              <option [value]="s" *ngFor="let s of stats">{{s.name}}</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid-right-pane" style="display: grid">
+            <ngx-charts-line-chart
+              [results]="results"
+              [legend]="true"
+              [showXAxisLabel]="true"
+              [showYAxisLabel]="true"
+              [xAxis]="true"
+              [yAxis]="true"
+              xAxisLabel="Index"
+              yAxisLabel=""
+            >
+            </ngx-charts-line-chart>
         </div>
       </div>
     </div>
@@ -88,6 +47,7 @@ import {PersistanceService} from "../../services/persistance-service";
   ]
 })
 export class ChartsViewComponent implements OnInit {
+  stats = knownStats;
   private _selectedLog?: ILog;
   @Input() get selectedLog() {return this._selectedLog;}
   set selectedLog(v: ILog|undefined) {
@@ -98,59 +58,51 @@ export class ChartsViewComponent implements OnInit {
 
   startRow = 0;
   endRow = 0;
-  chartsToDraw: ChartsToDraw = {gpsSpeed: true};
 
-  view = [undefined, 500];
   results = [];
-  constructor(private persistance: PersistanceService) {
+  selectedStat: StatDesc[] = [];
+  constructor(private persistance: PersistenceService) {
   }
 
   ngOnInit(): void {
-    this.chartsToDraw = this.persistance.chartsToDraw ?? this.chartsToDraw;
+    this.selectedStat = this.persistance.chartsToDraw?.map(x => this.stats.find(y => y.field == x.field)!)
+      ?? [this.stats[0]];
     this.chartSelectionChanged();
   }
 
   chartSelectionChanged() {
-    this.persistance.chartsToDraw = this.chartsToDraw;
+    this.persistance.chartsToDraw = this.selectedStat;
     const data = [];
-    if (this.chartsToDraw.gpsSpeed) {
-      const series = {name: "Speed", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.gpsSpeed ?? 0}})};
+    for (let f of this.selectedStat) {
+      const series = {name: f.name, series:
+          this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow)
+            .map(x => {return {name: x.index, value: (<any>x)[f.field] ?? 0}})};
       data.push(series);
     }
-    if (this.chartsToDraw.power) {
-      const series = {name: "Power", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.power ?? 0}})};
-      data.push(series);
-    }
-    if (this.chartsToDraw.rxBattery) {
-      const series = {name: "Rx Battery", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.rxBattery ?? 0}})};
-      data.push(series);
-    }
-    if (this.chartsToDraw.wattPerKm) {
-      const series = {name: "Wh/km", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.wattPerKm ?? 0}})};
-      data.push(series);
-    }
-    if (this.chartsToDraw.estimatedRange) {
-      const series = {name: "Est. range", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.estimatedRange ?? 0}})};
-      data.push(series);
-    }
-    if (this.chartsToDraw.estimatedFlightTime) {
-      const series = {name: "Est. time", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.estimatedFlightTime ?? 0}})};
-      data.push(series);
-    }
+    // if (this.chartsToDraw.gpsSpeed) {
+    //   const series = {name: "Speed", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.gpsSpeed ?? 0}})};
+    //   data.push(series);
+    // }
+    // if (this.chartsToDraw.power) {
+    //   const series = {name: "Power", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.power ?? 0}})};
+    //   data.push(series);
+    // }
+    // if (this.chartsToDraw.rxBattery) {
+    //   const series = {name: "Rx Battery", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.rxBattery ?? 0}})};
+    //   data.push(series);
+    // }
+    // if (this.chartsToDraw.wattPerKm) {
+    //   const series = {name: "Wh/km", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.wattPerKm ?? 0}})};
+    //   data.push(series);
+    // }
+    // if (this.chartsToDraw.estimatedRange) {
+    //   const series = {name: "Est. range", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.estimatedRange ?? 0}})};
+    //   data.push(series);
+    // }
+    // if (this.chartsToDraw.estimatedFlightTime) {
+    //   const series = {name: "Est. time", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.estimatedFlightTime ?? 0}})};
+    //   data.push(series);
+    // }
     this.results = <any>data;
   }
-}
-
-export interface ChartsToDraw {
-  trip?:boolean;
-  altitude?:boolean;
-  gpsSpeed?:boolean;
-  rss1?:boolean;
-  djiBitrate?:boolean;
-  djiDelay?:boolean;
-  rxBattery?:boolean;
-  power?:boolean;
-  wattPerKm?:boolean;
-  estimatedRange?:boolean;
-  estimatedFlightTime?:boolean;
 }

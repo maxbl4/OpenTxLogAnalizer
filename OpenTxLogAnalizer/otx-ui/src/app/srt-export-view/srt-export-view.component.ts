@@ -1,7 +1,7 @@
 import {Component, Input, OnInit} from '@angular/core';
 import {OsdItems, SrtGenerator} from "../../services/srt-generator";
 import {ILog} from "../../services/open-tx-log-parser";
-import {PersistanceService} from "../../services/persistance-service";
+import {PersistenceService} from "../../services/persistence.service";
 
 @Component({
   selector: 'otx-srt-export-view',
@@ -77,7 +77,7 @@ export class SrtExportViewComponent implements OnInit {
   @Input() logFileName?: string;
   @Input() selectedLog?: ILog;
 
-  constructor(private srtGenerator: SrtGenerator, private persistance: PersistanceService) { }
+  constructor(private srtGenerator: SrtGenerator, private persistance: PersistenceService) { }
 
   ngOnInit(): void {
     this.osdItems = this.persistance.srtExport_osdItems ?? this.osdItems;

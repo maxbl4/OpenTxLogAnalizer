@@ -59,6 +59,7 @@ export class LogChooserViewComponent implements OnInit {
   set selectedLog(v: ILog|undefined) {
     this._selectedLog = v;
     if (v) this.chooseLog(v);
+    else this.clearSelectedLog();
   }
   @Output() selectedLogChange = new EventEmitter<ILog|undefined>();
 

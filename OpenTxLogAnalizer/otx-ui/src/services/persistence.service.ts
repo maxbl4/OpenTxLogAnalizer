@@ -1,10 +1,9 @@
 import {Injectable} from "@angular/core";
 import {OsdItems} from "./srt-generator";
-import {ChartsToDraw} from "../app/charts-view/charts-view.component";
-import {MapViewPreferences} from "../app/map-view/map-view.component";
+import {MapViewPreferences, StatDesc} from "../app/map-view/map-view.component";
 
 @Injectable()
-export class PersistanceService {
+export class PersistenceService {
   get srtExport_osdItems(): OsdItems|undefined {
     return this.load("srtExport_osdItems");
   }
@@ -21,12 +20,20 @@ export class PersistanceService {
     this.save("mapViewPreferences", v);
   }
 
-  get chartsToDraw(): ChartsToDraw|undefined {
+  get chartsToDraw(): StatDesc[]|undefined {
     return this.load("chartsToDraw");
   }
 
-  set chartsToDraw(v: ChartsToDraw|undefined) {
+  set chartsToDraw(v: StatDesc[]|undefined) {
     this.save("chartsToDraw", v);
+  }
+
+  get selectedTabPane(): number|undefined {
+    return this.load("selectedTabPane");
+  }
+
+  set selectedTabPane(v: number|undefined) {
+    this.save("selectedTabPane", v);
   }
 
   load<T>(key: string) {

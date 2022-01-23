@@ -18,7 +18,7 @@ import { ChartsViewComponent } from './charts-view/charts-view.component';
 import { UsageTextViewComponent } from './usage-text-view/usage-text-view.component';
 import { LogChooserViewComponent } from './log-chooser-view/log-chooser-view.component';
 import { SrtExportViewComponent } from './srt-export-view/srt-export-view.component';
-import {PersistanceService} from "../services/persistance-service";
+import {PersistenceService} from "../services/persistence.service";
 import { MapViewComponent } from './map-view/map-view.component';
 import { LogBoundsControlComponent } from './log-bounds-control/log-bounds-control.component';
 
@@ -46,7 +46,7 @@ import { LogBoundsControlComponent } from './log-bounds-control/log-bounds-contr
     NgxChartsModule,
     BrowserAnimationsModule,
   ],
-  providers: [OpenTxLogParser, DataManager, SrtParser, SrtGenerator, PersistanceService],
+  providers: [OpenTxLogParser, DataManager, SrtParser, SrtGenerator, PersistenceService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

@@ -2,38 +2,35 @@ import {Component, Input, OnInit} from '@angular/core';
 import {ILog, ILogRow} from "../../services/open-tx-log-parser";
 import * as _ from "underscore";
 import {Distance} from "gps";
-import {PersistanceService} from "../../services/persistance-service";
+import {PersistenceService} from "../../services/persistence.service";
+import {DataManager} from "../../services/data-manager";
 
 @Component({
   selector: 'otx-map-view',
   template: `
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-auto">
-          <div style="width:200px">
-            <div class="mb-3">
-              <label for="formGroupExampleInput" class="form-label">Value to draw</label>
-              <select class="form-select" multiple [(ngModel)]="selectedStat" (change)="drawTrack()" [size]="stats.length">
-                <option [value]="s" *ngFor="let s of stats">{{s.name}}</option>
-              </select>
-            </div>
-            <div class="mb-3">
-              <label for="formGroupExampleInput" class="form-label">Line Width</label>
-              <select class="form-select" aria-label="Default select example" [(ngModel)]="strokeWidth" (change)="drawTrack()">
-                <option [value]="4">4</option>
-                <option [value]="6">6</option>
-                <option [value]="8">8</option>
-                <option [value]="10">10</option>
-                <option [value]="12">12</option>
-                <option [value]="14">14</option>
-                <option [value]="16">16</option>
-              </select>
-            </div>
-          </div>
+    <div class="grid-two-panes flex-grow-1">
+      <div class="grid-left-pane">
+        <div class="mb-3">
+          <label for="formGroupExampleInput" class="form-label">Value to draw</label>
+          <select class="form-select" multiple [(ngModel)]="selectedStat" (change)="drawTrack()" [size]="stats.length">
+            <option [value]="s" *ngFor="let s of stats">{{s.name}}</option>
+          </select>
         </div>
-        <div class="col">
-          <div id="map" style="width: 100%; height: 800px"></div>
+        <div class="mb-3">
+          <label for="formGroupExampleInput" class="form-label">Line Width</label>
+          <select class="form-select" aria-label="Default select example" [(ngModel)]="strokeWidth" (change)="drawTrack()">
+            <option [value]="4">4</option>
+            <option [value]="6">6</option>
+            <option [value]="8">8</option>
+            <option [value]="10">10</option>
+            <option [value]="12">12</option>
+            <option [value]="14">14</option>
+            <option [value]="16">16</option>
+          </select>
         </div>
+      </div>
+      <div class="grid-right-pane" style="display: grid">
+          <div id="map" style="width: 100%; height: 100%"></div>
       </div>
     </div>
   `,
@@ -46,25 +43,7 @@ import {PersistanceService} from "../../services/persistance-service";
   `]
 })
 export class MapViewComponent implements OnInit {
-  stats = [
-    {name: "Speed", field: "gpsSpeed"},
-    {name: "Altitude", field: "altitude"},
-    {name: "Pitch Degrees", field: "pitchDeg"},
-    {name: "Throttle %", field: "throttle"},
-    {name: "Home", field: "distanceToHome"},
-    {name: "Sats Count", field: "sats"},
-    {name: "Rx Battery", field: "rxBattery"},
-    {name: "Current", field: "current", lowIsBetter: true},
-    {name: "Capacity", field: "capacity"},
-    {name: "Watt hour per km", field: "wattPerKm", lowIsBetter: true},
-    {name: "Estimated Range", field: "estimatedRange"},
-    {name: "Estimated Time", field: "estimatedFlightTime"},
-    {name: "RSSI dbm", field: "rss1"},
-    {name: "LQ", field: "rqly"},
-    {name: "Tx Power", field: "tpwr", lowIsBetter: true},
-    {name: "DJI Latency", field: "djiDelay", lowIsBetter: true},
-    {name: "DJI Bitrate", field: "djiBitrate"},
-  ];
+  stats = knownStats;
   private _selectedLog?: ILog;
   private myMap: any;
   selectedStat = [this.stats[0]];
@@ -75,10 +54,10 @@ export class MapViewComponent implements OnInit {
     this.drawTrack(true);
   }
 
-  constructor(private persistance: PersistanceService) {
-    const data = persistance.mapViewPreferences ?? {selectedStat: this.stats[0].field, strokeWidth: 14};
-    this.strokeWidth = data.strokeWidth!;
-    this.selectedStat = [this.stats.find(x => x.field === data.selectedStat) ?? this.stats[0]];
+  constructor(private persistence: PersistenceService, public data: DataManager) {
+    const d = persistence.mapViewPreferences ?? {selectedStat: this.stats[0].field, strokeWidth: 14};
+    this.strokeWidth = d.strokeWidth!;
+    this.selectedStat = [this.stats.find(x => x.field === d.selectedStat) ?? this.stats[0]];
   }
 
   ngOnInit(): void {
@@ -94,7 +73,7 @@ export class MapViewComponent implements OnInit {
 
   drawTrack(setCenter:boolean = false) {
     if (!this._selectedLog || !this.myMap) return;
-    this.persistance.mapViewPreferences = {selectedStat: this.selectedStat[0].field, strokeWidth: this.strokeWidth};
+    this.persistence.mapViewPreferences = {selectedStat: this.selectedStat[0].field, strokeWidth: this.strokeWidth};
     this.myMap.geoObjects.removeAll();
     let coords = this.selectedLog?.rows.map(x => [x.lat, x.lon]) ?? [];
     const myPolyline = new ymaps.Polyline(coords, undefined, {strokeWidth: parseInt(<any>this.strokeWidth) + 2, strokeColor: ["FFFFFF"]});
@@ -184,18 +163,22 @@ export class MapViewComponent implements OnInit {
       if (c[1]! > maxLon) maxLon = c[1]!;
       if (c[1]! < minLon) minLon = c[1]!;
     }
-    const dist = Math.max(Distance(minLat, minLon, maxLat, maxLon),
-        Distance(minLat, maxLon, maxLat, minLon))
+    const dist = Math.max(Distance(minLat, minLon, minLat, maxLon),
+        Distance(maxLat, minLon, maxLat, maxLon),
+        Distance(minLat, minLon, maxLat, minLon),
+        Distance(minLat, maxLon, maxLat, maxLon))
       * 1000;
+    console.log(dist);
     let zoom = 11;
-    if (dist < 16000) zoom = 12;
-    if (dist < 8000) zoom = 13;
-    if (dist < 4000) zoom = 14;
-    if (dist < 2000) zoom = 15;
-    if (dist < 1000) zoom = 16;
-    if (dist < 500) zoom = 17;
-    if (dist < 300) zoom = 18;
-    if (dist < 100) zoom = 19;
+    if (dist < 20480) zoom = 11;
+    if (dist < 10240) zoom = 12;
+    if (dist < 5120) zoom = 13;
+    if (dist < 2560) zoom = 14;
+    if (dist < 1280) zoom = 15;
+    if (dist < 640) zoom = 16;
+    if (dist < 320) zoom = 17;
+    if (dist < 160) zoom = 18;
+    if (dist < 80) zoom = 19;
 
     return {center: [(minLat + maxLat) / 2, (minLon + maxLon) / 2], zoom: zoom };
   }
@@ -207,3 +190,29 @@ export interface MapViewPreferences {
   strokeWidth?: number;
   selectedStat?: string;
 }
+
+export interface StatDesc {
+  name: string;
+  field: string;
+  lowIsBetter?: boolean;
+}
+
+export const knownStats: StatDesc[] = [
+  {name: "Speed", field: "gpsSpeed"},
+  {name: "Altitude", field: "altitude"},
+  {name: "Pitch Degrees", field: "pitchDeg"},
+  {name: "Throttle %", field: "throttle"},
+  {name: "Home", field: "distanceToHome"},
+  {name: "Sats Count", field: "sats"},
+  {name: "Rx Battery", field: "rxBattery"},
+  {name: "Current", field: "current", lowIsBetter: true},
+  {name: "Capacity", field: "capacity"},
+  {name: "Watt hour per km", field: "wattPerKm", lowIsBetter: true},
+  {name: "Estimated Range", field: "estimatedRange"},
+  {name: "Estimated Time", field: "estimatedFlightTime"},
+  {name: "RSSI dbm", field: "rss1"},
+  {name: "LQ", field: "rqly"},
+  {name: "Tx Power", field: "tpwr", lowIsBetter: true},
+  {name: "DJI Latency", field: "djiDelay", lowIsBetter: true},
+  {name: "DJI Bitrate", field: "djiBitrate"},
+];
