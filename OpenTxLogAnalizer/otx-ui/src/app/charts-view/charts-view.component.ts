@@ -2,6 +2,7 @@ import {Component, Input, OnInit} from '@angular/core';
 import {ILog} from "../../services/open-tx-log-parser";
 import {PersistenceService} from "../../services/persistence.service";
 import {knownStats, StatDesc} from "../map-view/map-view.component";
+import {DataManager} from "../../services/data-manager";
 
 @Component({
   selector: 'otx-charts-view',
@@ -9,7 +10,7 @@ import {knownStats, StatDesc} from "../map-view/map-view.component";
     <div class="container-fluid flex-container flex-grow-1">
       <div class="row">
         <div class="col">
-          Include rows from <input [(ngModel)]="startRow" (change)="chartSelectionChanged()"/> to <input [(ngModel)]="endRow" (change)="chartSelectionChanged()"/>
+          <otx-log-bounds-control [selectedLog]="selectedLog" (boundsChange)="chartSelectionChanged()"></otx-log-bounds-control>
         </div>
       </div>
 
@@ -52,16 +53,11 @@ export class ChartsViewComponent implements OnInit {
   @Input() get selectedLog() {return this._selectedLog;}
   set selectedLog(v: ILog|undefined) {
     this._selectedLog = v;
-    this.startRow = 0;
-    this.endRow = v?.rows.length ?? 0;
   }
-
-  startRow = 0;
-  endRow = 0;
 
   results = [];
   selectedStat: StatDesc[] = [];
-  constructor(private persistance: PersistenceService) {
+  constructor(private data: DataManager, private persistance: PersistenceService) {
   }
 
   ngOnInit(): void {
@@ -75,34 +71,10 @@ export class ChartsViewComponent implements OnInit {
     const data = [];
     for (let f of this.selectedStat) {
       const series = {name: f.name, series:
-          this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow)
+          this.selectedLog?.rows.slice(this.data.startRow, this.data.endRow)
             .map(x => {return {name: x.index, value: (<any>x)[f.field] ?? 0}})};
       data.push(series);
     }
-    // if (this.chartsToDraw.gpsSpeed) {
-    //   const series = {name: "Speed", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.gpsSpeed ?? 0}})};
-    //   data.push(series);
-    // }
-    // if (this.chartsToDraw.power) {
-    //   const series = {name: "Power", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.power ?? 0}})};
-    //   data.push(series);
-    // }
-    // if (this.chartsToDraw.rxBattery) {
-    //   const series = {name: "Rx Battery", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.rxBattery ?? 0}})};
-    //   data.push(series);
-    // }
-    // if (this.chartsToDraw.wattPerKm) {
-    //   const series = {name: "Wh/km", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.wattPerKm ?? 0}})};
-    //   data.push(series);
-    // }
-    // if (this.chartsToDraw.estimatedRange) {
-    //   const series = {name: "Est. range", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.estimatedRange ?? 0}})};
-    //   data.push(series);
-    // }
-    // if (this.chartsToDraw.estimatedFlightTime) {
-    //   const series = {name: "Est. time", series: this.selectedLog?.rows.slice(this.startRow, this.endRow - this.startRow).map(x => {return {name: x.index, value: x.estimatedFlightTime ?? 0}})};
-    //   data.push(series);
-    // }
     this.results = <any>data;
   }
 }

@@ -11,6 +11,9 @@ export class DataManager implements IData {
   originalOtxLogs: ILog[] = [];
   logs = new Subject<ILog[]>();
   tabPaneHeight: number = 0;
+  selectedLog?: ILog;
+  startRow: number = 0;
+  endRow: number = 0;
 
   get hasData():boolean {
     if (this.openTxLogFileName) return true;
@@ -72,13 +75,14 @@ export class DataManager implements IData {
     }
   }
 
-  private updateStatistics(log:ILog) {
+  public updateStatistics(log:ILog) {
     const rows = log.rows;
     const last = _.last(rows);
     log.stats = {
       speed: stat(rows.map(x => x.gpsSpeed??0)),
       current: stat(rows.map(x => x.current??0)),
       power: stat(rows.map(x => x.power??0)),
+      correctPower: stat(rows.map(x => x.correctPower??0)),
       rxBattery: stat(rows.map(x => x.rxBattery??0)),
       wattPerKm: stat(rows.map(x => x.wattPerKm??0)),
       estimatedRange: stat(rows.map(x => x.estimatedRange??0)),
@@ -110,6 +114,7 @@ export interface Stats {
   speed: StatTriple;
   current: StatTriple;
   power: StatTriple;
+  correctPower: StatTriple;
   rxBattery: StatTriple;
   wattPerKm: StatTriple;
   estimatedRange: StatTriple;

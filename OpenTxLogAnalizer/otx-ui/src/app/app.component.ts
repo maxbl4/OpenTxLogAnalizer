@@ -145,7 +145,6 @@ export class AppComponent implements OnInit{
 
   constructor(public data: DataManager, public persistence: PersistenceService) {
     this.selectedTabPane = persistence.selectedTabPane ?? 1;
-    console.log(this.selectedTabPane);
     window.addEventListener('resize', e => this.checkWindowSize(), true);
   }
 

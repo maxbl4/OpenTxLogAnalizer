@@ -1,36 +1,36 @@
 import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import { ILog } from 'src/services/open-tx-log-parser';
-import * as _ from "underscore";
+import {DataManager} from "../../services/data-manager";
 
 @Component({
   selector: 'otx-log-bounds-control',
   template: `
-    Include rows from <input [(ngModel)]="startRow" (change)="selectionChanged()"/> to <input [(ngModel)]="endRow" (change)="selectionChanged()"/>
+    Include rows from <input [(ngModel)]="data.startRow" (change)="onChange()"/> to <input [(ngModel)]="data.endRow"
+                                                                                           (change)="onChange()"/>
+<!--    Actual mAh used <input [(ngModel)]="selectedLog.actualMah" (change)="whChanged()"/>-->
+<!--    Total Watt Hour capacity <input [(ngModel)]="selectedLog.totalWh" (change)="whChanged()"/>-->
   `,
   styles: [
   ]
 })
-export class LogBoundsControlComponent implements OnInit {
-  _selectedLog?: ILog;
-  @Input() get selectedLog() {return this._selectedLog;}
-  set selectedLog(v) {
-    this._selectedLog = v;
-    this.startRow = 0;
-    this.endRow = v?.rows?.length ?? 0;
-    this.selectionChanged();
-  }
-  @Input() startRow = 0;
-  @Output() startRowChange = new EventEmitter<number>();
-  @Input() endRow = 0;
-  @Output() endRowChange = new EventEmitter<number>();
+export class LogBoundsControlComponent {
+  @Input() selectedLog?: ILog;
+  @Output() boundsChange = new EventEmitter<void>();
 
-  constructor() { }
-
-  ngOnInit(): void {
+  constructor(public data:DataManager) {
   }
 
-  selectionChanged() {
-    this.startRowChange.next(this.startRow);
-    this.endRowChange.next(this.endRow);
+  onChange(){
+    console.log(this.selectedLog);
+    if (this.data.endRow > (this.selectedLog?.rows.length ?? 0))
+      this.data.endRow = this.selectedLog?.rows.length ?? 0;
+    if (this.data.startRow > this.data.endRow || this.data.startRow < 0)
+      this.data.startRow = 0;
+    this.boundsChange.next();
+  }
+
+  whChanged() {
+    if (this.selectedLog)
+      this.data.updateStatistics(this.selectedLog);
   }
 }

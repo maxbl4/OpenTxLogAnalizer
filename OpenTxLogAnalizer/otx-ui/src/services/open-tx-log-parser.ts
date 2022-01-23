@@ -73,7 +73,7 @@ export class OpenTxLogParser {
           currentLog.duration = prevRow.timestamp!.diff(startTimestamp!);
           this.updateTotals(currentLog);
         }
-        currentLog = {timestamp: typedRow.timestamp, rows:[]};
+        currentLog = {timestamp: typedRow.timestamp, rows:[], totalWh: 0, actualMah: 0};
         logs.push(currentLog);
         startTimestamp = typedRow.timestamp;
         index = 1;
@@ -218,6 +218,8 @@ export interface ILog {
   isSelected?: boolean;
   srtFileName?: string;
   stats?: Stats;
+  actualMah: number;
+  totalWh: number;
 }
 
 export interface ILogRow {
@@ -247,8 +249,10 @@ export interface ILogRow {
   tpwr?: number;
   rxBattery?: number;
   current?: number;
+  correctCurrent?: number;
   capacity?: number;
   power?: number;
+  correctPower?: number;
   batteryPercent?: number;
   pitchDeg?: number;
   rollDeg?: number;

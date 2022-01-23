@@ -2,6 +2,7 @@ import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import { DateTime } from 'luxon';
 import {ILog} from "../../services/open-tx-log-parser";
 import {NgxFileDropEntry} from "ngx-file-drop";
+import {DataManager} from "../../services/data-manager";
 
 @Component({
   selector: 'otx-log-chooser-view',
@@ -66,7 +67,7 @@ export class LogChooserViewComponent implements OnInit {
   @Output() srtLogDropped = new EventEmitter<FileSystemFileEntry>();
 
 
-  constructor() { }
+  constructor(private data: DataManager) { }
 
   ngOnInit(): void {
   }
@@ -76,6 +77,8 @@ export class LogChooserViewComponent implements OnInit {
       this._selectedLog.isSelected = false;
     this._selectedLog = log;
     log.isSelected = true;
+    this.data.startRow = 0;
+    this.data.endRow = log.rows.length;
     this.selectedLogChange.next(log);
     return false;
   }

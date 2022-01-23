@@ -40,6 +40,6 @@ export class SrtParser {
 
       i++;
     }
-    return {rows:rows, duration: _.last(rows)?.Time};
+    return {rows:rows, duration: _.last(rows)?.Time, totalWh: 0, actualMah: 0};
   }
 }
