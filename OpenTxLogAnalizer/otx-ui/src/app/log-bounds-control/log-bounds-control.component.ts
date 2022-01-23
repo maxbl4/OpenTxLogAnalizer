@@ -5,8 +5,8 @@ import {DataManager} from "../../services/data-manager";
 @Component({
   selector: 'otx-log-bounds-control',
   template: `
-    Include rows from <input [(ngModel)]="data.startRow" (change)="onChange()"/> to <input [(ngModel)]="data.endRow"
-                                                                                           (change)="onChange()"/>
+    Include rows from <input [(ngModel)]="data.startRow" (change)="onChange()" />
+    to <input [(ngModel)]="data.endRow" (change)="onChange()" />
 <!--    Actual mAh used <input [(ngModel)]="selectedLog.actualMah" (change)="whChanged()"/>-->
 <!--    Total Watt Hour capacity <input [(ngModel)]="selectedLog.totalWh" (change)="whChanged()"/>-->
   `,
@@ -21,7 +21,6 @@ export class LogBoundsControlComponent {
   }
 
   onChange(){
-    console.log(this.selectedLog);
     if (this.data.endRow > (this.selectedLog?.rows.length ?? 0))
       this.data.endRow = this.selectedLog?.rows.length ?? 0;
     if (this.data.startRow > this.data.endRow || this.data.startRow < 0)

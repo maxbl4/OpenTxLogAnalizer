@@ -8,6 +8,11 @@ import {DataManager} from "../../services/data-manager";
 @Component({
   selector: 'otx-map-view',
   template: `
+    <div class="row">
+      <div class="col">
+        <otx-log-bounds-control [selectedLog]="selectedLog" (boundsChange)="drawTrack()"></otx-log-bounds-control>
+      </div>
+    </div>
     <div class="grid-two-panes flex-grow-1">
       <div class="grid-left-pane">
         <div class="mb-3">
@@ -75,7 +80,7 @@ export class MapViewComponent implements OnInit {
     if (!this._selectedLog || !this.myMap) return;
     this.persistence.mapViewPreferences = {selectedStat: this.selectedStat[0].field, strokeWidth: this.strokeWidth};
     this.myMap.geoObjects.removeAll();
-    let coords = this.selectedLog?.rows.map(x => [x.lat, x.lon]) ?? [];
+    let coords = this.getRows().map(x => [x.lat, x.lon]);
     const myPolyline = new ymaps.Polyline(coords, undefined, {strokeWidth: parseInt(<any>this.strokeWidth) + 2, strokeColor: ["FFFFFF"]});
     this.myMap.geoObjects.add(myPolyline);
     if (setCenter) {
@@ -86,7 +91,7 @@ export class MapViewComponent implements OnInit {
   }
 
   private drawMulticolorTrack() {
-    const rows = this.selectedLog?.rows ?? [];
+    const rows = this.getRows();
     const selectedStat = this.selectedStat[0];
     const minRow = <ILogRow>_.min(rows, (x:any) => x[selectedStat.field]);
     const maxRow = <ILogRow>_.max(rows, (x:any) => x[selectedStat.field]);
@@ -108,11 +113,7 @@ export class MapViewComponent implements OnInit {
       this.myMap.geoObjects.add(t);
       if (i % markerSpacing == 0) {
         const myPlacemark = new ymaps.Placemark([rows[i].lat, rows[i].lon], {iconCaption: stat.toString()});
-        try
-        {this.myMap.geoObjects.add(myPlacemark);}
-        catch (e) {
-          console.log(e, color);
-        }
+        this.myMap.geoObjects.add(myPlacemark);
       }
       if (i == minRow.index && !minShown) {
         const myPlacemark = new ymaps.Placemark([rows[i].lat, rows[i].lon], {iconCaption: "MIN: " + stat.toString()});
@@ -168,7 +169,6 @@ export class MapViewComponent implements OnInit {
         Distance(minLat, minLon, maxLat, minLon),
         Distance(minLat, maxLon, maxLat, maxLon))
       * 1000;
-    console.log(dist);
     let zoom = 11;
     if (dist < 20480) zoom = 11;
     if (dist < 10240) zoom = 12;
@@ -181,6 +181,10 @@ export class MapViewComponent implements OnInit {
     if (dist < 80) zoom = 19;
 
     return {center: [(minLat + maxLat) / 2, (minLon + maxLon) / 2], zoom: zoom };
+  }
+
+  private getRows() {
+    return this.selectedLog?.rows.slice(this.data.startRow, this.data.endRow) ?? [];
   }
 }
 
@@ -202,11 +206,11 @@ export const knownStats: StatDesc[] = [
   {name: "Altitude", field: "altitude"},
   {name: "Pitch Degrees", field: "pitchDeg"},
   {name: "Throttle %", field: "throttle"},
-  {name: "Home", field: "distanceToHome"},
+  {name: "Home", field: "distanceToHome", lowIsBetter: true},
   {name: "Sats Count", field: "sats"},
   {name: "Rx Battery", field: "rxBattery"},
   {name: "Current", field: "current", lowIsBetter: true},
-  {name: "Capacity", field: "capacity"},
+  {name: "Capacity", field: "capacity", lowIsBetter: true},
   {name: "Watt hour per km", field: "wattPerKm", lowIsBetter: true},
   {name: "Estimated Range", field: "estimatedRange"},
   {name: "Estimated Time", field: "estimatedFlightTime"},

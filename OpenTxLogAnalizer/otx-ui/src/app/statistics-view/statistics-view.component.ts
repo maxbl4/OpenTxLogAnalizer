@@ -1,9 +1,15 @@
 import {Component, Input, OnInit} from '@angular/core';
 import { ILog } from 'src/services/open-tx-log-parser';
+import {DataManager} from "../../services/data-manager";
 
 @Component({
   selector: 'otx-statistics-view',
   template: `
+    <div class="row">
+      <div class="col">
+        <otx-log-bounds-control [selectedLog]="selectedLog" (boundsChange)="data.updateStatistics(selectedLog, true)"></otx-log-bounds-control>
+      </div>
+    </div>
     <table class="table table-hover">
       <thead>
       <tr>
@@ -126,9 +132,10 @@ export class StatisticsViewComponent implements OnInit {
   @Input()
   selectedLog?: ILog;
 
-  constructor() { }
+  constructor(public data: DataManager) { }
 
   ngOnInit(): void {
+    this.data.updateStatistics(this.selectedLog, true);
   }
 
 }

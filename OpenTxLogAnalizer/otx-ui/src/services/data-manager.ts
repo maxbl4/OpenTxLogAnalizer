@@ -75,8 +75,12 @@ export class DataManager implements IData {
     }
   }
 
-  public updateStatistics(log:ILog) {
-    const rows = log.rows;
+  public updateStatistics(log?:ILog, slice: boolean = false) {
+    if (!log) return;
+    const rows = slice
+      ? log.rows.slice(this.startRow, this.endRow)
+      : log.rows;
+    if (rows.length == 0) return;
     const last = _.last(rows);
     log.stats = {
       speed: stat(rows.map(x => x.gpsSpeed??0)),
