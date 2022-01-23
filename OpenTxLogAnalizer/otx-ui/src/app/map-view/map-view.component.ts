@@ -52,7 +52,7 @@ export class MapViewComponent implements OnInit {
     {name: "Pitch Degrees", field: "pitchDeg"},
     {name: "Throttle %", field: "throttle"},
     {name: "Home", field: "distanceToHome"},
-    {name: "Stats Count", field: "sats"},
+    {name: "Sats Count", field: "sats"},
     {name: "Rx Battery", field: "rxBattery"},
     {name: "Current", field: "current", lowIsBetter: true},
     {name: "Capacity", field: "capacity"},
