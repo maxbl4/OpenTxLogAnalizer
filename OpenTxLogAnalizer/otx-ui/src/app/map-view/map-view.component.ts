@@ -2,6 +2,7 @@ import {Component, Input, OnInit} from '@angular/core';
 import {ILog, ILogRow} from "../../services/open-tx-log-parser";
 import * as _ from "underscore";
 import {Distance} from "gps";
+import {PersistanceService} from "../../services/persistance-service";
 
 @Component({
   selector: 'otx-map-view',
@@ -9,23 +10,25 @@ import {Distance} from "gps";
     <div class="container-fluid">
       <div class="row">
         <div class="col-auto">
-          <div class="mb-3">
-            <label for="formGroupExampleInput" class="form-label">Value to draw</label>
-            <select class="form-select" multiple [(ngModel)]="selectedStat" (change)="drawTrack()" [size]="stats.length">
-              <option [value]="s" *ngFor="let s of stats">{{s.name}}</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label for="formGroupExampleInput" class="form-label">Line Width</label>
-            <select class="form-select" aria-label="Default select example" [(ngModel)]="strokeWidth" (change)="drawTrack()">
-              <option value="4">4</option>
-              <option value="6">6</option>
-              <option value="8">8</option>
-              <option value="10">10</option>
-              <option value="12">12</option>
-              <option value="14">14</option>
-              <option value="16">16</option>
-            </select>
+          <div style="width:200px">
+            <div class="mb-3">
+              <label for="formGroupExampleInput" class="form-label">Value to draw</label>
+              <select class="form-select" multiple [(ngModel)]="selectedStat" (change)="drawTrack()" [size]="stats.length">
+                <option [value]="s" *ngFor="let s of stats">{{s.name}}</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="formGroupExampleInput" class="form-label">Line Width</label>
+              <select class="form-select" aria-label="Default select example" [(ngModel)]="strokeWidth" (change)="drawTrack()">
+                <option [value]="4">4</option>
+                <option [value]="6">6</option>
+                <option [value]="8">8</option>
+                <option [value]="10">10</option>
+                <option [value]="12">12</option>
+                <option [value]="14">14</option>
+                <option [value]="16">16</option>
+              </select>
+            </div>
           </div>
         </div>
         <div class="col">
@@ -51,7 +54,7 @@ export class MapViewComponent implements OnInit {
     {name: "Home", field: "distanceToHome"},
     {name: "Stats Count", field: "sats"},
     {name: "Rx Battery", field: "rxBattery"},
-    {name: "Current", field: "current"},
+    {name: "Current", field: "current", lowIsBetter: true},
     {name: "Capacity", field: "capacity"},
     {name: "Watt hour per km", field: "wattPerKm", lowIsBetter: true},
     {name: "Estimated Range", field: "estimatedRange"},
@@ -72,7 +75,11 @@ export class MapViewComponent implements OnInit {
     this.drawTrack(true);
   }
 
-  constructor() { }
+  constructor(private persistance: PersistanceService) {
+    const data = persistance.mapViewPreferences ?? {selectedStat: this.stats[0].field, strokeWidth: 14};
+    this.strokeWidth = data.strokeWidth!;
+    this.selectedStat = [this.stats.find(x => x.field === data.selectedStat) ?? this.stats[0]];
+  }
 
   ngOnInit(): void {
     ymaps.ready(() => {
@@ -87,9 +94,10 @@ export class MapViewComponent implements OnInit {
 
   drawTrack(setCenter:boolean = false) {
     if (!this._selectedLog || !this.myMap) return;
+    this.persistance.mapViewPreferences = {selectedStat: this.selectedStat[0].field, strokeWidth: this.strokeWidth};
     this.myMap.geoObjects.removeAll();
     let coords = this.selectedLog?.rows.map(x => [x.lat, x.lon]) ?? [];
-    const myPolyline = new ymaps.Polyline(coords, undefined, {strokeWidth:this.strokeWidth + 2, strokeColor: ["FFFFFF"]});
+    const myPolyline = new ymaps.Polyline(coords, undefined, {strokeWidth: parseInt(<any>this.strokeWidth) + 2, strokeColor: ["FFFFFF"]});
     this.myMap.geoObjects.add(myPolyline);
     if (setCenter) {
       const c = this.findTrackCenter(coords);
@@ -113,12 +121,19 @@ export class MapViewComponent implements OnInit {
       let statValue = (stat - minStat)/statRange;
       if (selectedStat.lowIsBetter)
         statValue = 1 - statValue;
+      let color = this.getMultiColor(statValue);
+      if (statRange == 0)
+        color = "FFFFFF";
       const t = new ymaps.Polyline([[rows[i].lat, rows[i].lon], [rows[i + 1].lat, rows[i + 1].lon]], {balloonContent : stat.toString(), hintContent: stat.toString()},
-        {strokeWidth: this.strokeWidth, strokeColor: this.getMultiColor(statValue)});
+        {strokeWidth: this.strokeWidth, strokeColor: color});
       this.myMap.geoObjects.add(t);
       if (i % markerSpacing == 0) {
         const myPlacemark = new ymaps.Placemark([rows[i].lat, rows[i].lon], {iconCaption: stat.toString()});
-        this.myMap.geoObjects.add(myPlacemark);
+        try
+        {this.myMap.geoObjects.add(myPlacemark);}
+        catch (e) {
+          console.log(e, color);
+        }
       }
       if (i == minRow.index && !minShown) {
         const myPlacemark = new ymaps.Placemark([rows[i].lat, rows[i].lon], {iconCaption: "MIN: " + stat.toString()});
@@ -169,7 +184,9 @@ export class MapViewComponent implements OnInit {
       if (c[1]! > maxLon) maxLon = c[1]!;
       if (c[1]! < minLon) minLon = c[1]!;
     }
-    const dist = Distance(minLat, minLon, maxLat, maxLon) * 1000;
+    const dist = Math.max(Distance(minLat, minLon, maxLat, maxLon),
+        Distance(minLat, maxLon, maxLat, minLon))
+      * 1000;
     let zoom = 11;
     if (dist < 16000) zoom = 12;
     if (dist < 8000) zoom = 13;
@@ -185,3 +202,8 @@ export class MapViewComponent implements OnInit {
 }
 
 declare const ymaps: any;
+
+export interface MapViewPreferences {
+  strokeWidth?: number;
+  selectedStat?: string;
+}

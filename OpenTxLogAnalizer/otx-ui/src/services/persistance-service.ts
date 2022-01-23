@@ -1,6 +1,7 @@
 import {Injectable} from "@angular/core";
 import {OsdItems} from "./srt-generator";
 import {ChartsToDraw} from "../app/charts-view/charts-view.component";
+import {MapViewPreferences} from "../app/map-view/map-view.component";
 
 @Injectable()
 export class PersistanceService {
@@ -10,6 +11,14 @@ export class PersistanceService {
 
   set srtExport_osdItems(v: OsdItems|undefined) {
     this.save("srtExport_osdItems", v);
+  }
+
+  get mapViewPreferences(): MapViewPreferences|undefined {
+    return this.load("mapViewPreferences");
+  }
+
+  set mapViewPreferences(v: MapViewPreferences|undefined) {
+    this.save("mapViewPreferences", v);
   }
 
   get chartsToDraw(): ChartsToDraw|undefined {

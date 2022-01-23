@@ -24,7 +24,8 @@ import {NgxFileDropEntry} from "ngx-file-drop";
         <ngx-file-drop dropZoneLabel="Drop files here" (onFileDrop)="addSrtLog(selectedLog, $event)"
                        dropZoneClassName="drop-zone-white" contentClassName="drop-content-white" style="min-width:200px;">
           <ng-template ngx-file-drop-content-tmp let-openFileSelector="openFileSelector">
-            <ng-container>Drop DJI SRT here</ng-container>
+            <ng-container *ngIf="selectedLog.srtFileName">{{selectedLog.srtFileName}}</ng-container>
+            <ng-container *ngIf="!selectedLog.srtFileName">Drop DJI SRT here</ng-container>
           </ng-template>
         </ngx-file-drop>
         <small>Duration: {{selectedLog.duration?.toFormat("hh:mm:ss")}} Records: {{selectedLog.rows.length}}</small>

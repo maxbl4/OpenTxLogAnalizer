@@ -20,6 +20,7 @@ import { LogChooserViewComponent } from './log-chooser-view/log-chooser-view.com
 import { SrtExportViewComponent } from './srt-export-view/srt-export-view.component';
 import {PersistanceService} from "../services/persistance-service";
 import { MapViewComponent } from './map-view/map-view.component';
+import { LogBoundsControlComponent } from './log-bounds-control/log-bounds-control.component';
 
 @NgModule({
   declarations: [
@@ -29,7 +30,8 @@ import { MapViewComponent } from './map-view/map-view.component';
     UsageTextViewComponent,
     LogChooserViewComponent,
     SrtExportViewComponent,
-    MapViewComponent
+    MapViewComponent,
+    LogBoundsControlComponent
   ],
   imports: [
     BrowserModule,

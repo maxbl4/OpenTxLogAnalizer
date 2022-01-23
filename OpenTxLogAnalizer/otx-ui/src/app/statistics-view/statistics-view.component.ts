@@ -4,7 +4,7 @@ import { ILog } from 'src/services/open-tx-log-parser';
 @Component({
   selector: 'otx-statistics-view',
   template: `
-    <table class="table table-striped">
+    <table class="table table-hover">
       <thead>
       <tr>
         <th>Metric</th>
