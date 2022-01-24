@@ -69,6 +69,7 @@ export class MapViewComponent implements OnInit {
     ymaps.ready(() => {
       this.myMap = new ymaps.Map("map", {
         center: [55.76, 37.64],
+        controls: ['typeSelector', 'fullscreenControl', 'zoomControl', 'rulerControl'],
         zoom: 7
       });
       this.myMap.setType('yandex#hybrid')
