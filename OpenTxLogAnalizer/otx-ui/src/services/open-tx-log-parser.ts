@@ -55,7 +55,7 @@ export class OpenTxLogParser {
       typedRow.sats = parseInt(row["Sats"]);
       typedRow.altitude = Math.round(parseFloat(row["Alt(m)"])*10)/10;
       typedRow.gpsSpeed = Math.round(parseFloat(row["GSpd(kmh)"])*10)/10;
-      typedRow.wattPerKm = Math.round(1/typedRow.gpsSpeed * typedRow.power * 10)/10;
+      typedRow.wattPerKm = Math.round(1/typedRow.gpsSpeed * typedRow.power * 100)/10;
       if (isNaN(typedRow.wattPerKm) || !isFinite(typedRow.wattPerKm)) typedRow.wattPerKm = 0;
       typedRow.distanceTraveled = 0;
       const coords = row["GPS"] as string;
@@ -127,7 +127,7 @@ export class OpenTxLogParser {
 
   private updateTotals(currentLog: ILog) {
     if (currentLog.rows.length < 2) return;
-    const totalCapacity = (_.last(currentLog.rows)?.capacity ?? 0) / 1000;
+    const totalCapacity = ((_.last(currentLog.rows)?.capacity ?? 0) - (currentLog.rows[0].capacity ?? 0)) / 1000;
     const numberOfCells = Math.round((currentLog.rows[0].rxBattery ?? 0) / 4.2);
     const totalWh = numberOfCells * 3.7 * totalCapacity;
     for (let r of currentLog.rows) {
@@ -136,7 +136,7 @@ export class OpenTxLogParser {
       if (totalWh === 0 || !r.wattPerKm)
         r.estimatedRange = 0;
       else
-        r.estimatedRange = Math.round(totalWh / r.wattPerKm * 10) / 10;
+        r.estimatedRange = Math.round(totalWh / r.wattPerKm) / 10;
       if (totalWh === 0 || !r.power) {
         r.estimatedFlightTime = 0;
       }

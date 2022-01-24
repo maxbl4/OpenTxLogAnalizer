@@ -21,10 +21,10 @@ export class LogBoundsControlComponent {
   }
 
   onChange(){
-    if (this.data.endRow > (this.selectedLog?.rows.length ?? 0))
-      this.data.endRow = this.selectedLog?.rows.length ?? 0;
-    if (this.data.startRow > this.data.endRow || this.data.startRow < 0)
-      this.data.startRow = 0;
+    // if (this.data.endRow > (this.selectedLog?.rows.length ?? 0))
+    //   this.data.endRow = this.selectedLog?.rows.length ?? 0;
+    // if (this.data.startRow > this.data.endRow || this.data.startRow < 0)
+    //   this.data.startRow = 0;
     this.boundsChange.next();
   }
 

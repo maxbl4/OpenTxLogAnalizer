@@ -82,6 +82,7 @@ export class DataManager implements IData {
       : log.rows;
     if (rows.length == 0) return;
     const last = _.last(rows);
+
     log.stats = {
       speed: stat(rows.map(x => x.gpsSpeed??0)),
       current: stat(rows.map(x => x.current??0)),
