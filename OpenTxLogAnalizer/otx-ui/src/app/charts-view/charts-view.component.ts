@@ -1,5 +1,4 @@
-import {Component, Input, OnInit} from '@angular/core';
-import {ILog} from "../../services/open-tx-log-parser";
+import {Component, OnInit} from '@angular/core';
 import {PersistenceService} from "../../services/persistence.service";
 import {knownStats, StatDesc} from "../map-view/map-view.component";
 import {DataManager} from "../../services/data-manager";
@@ -8,14 +7,9 @@ import {DataManager} from "../../services/data-manager";
   selector: 'otx-charts-view',
   template: `
     <div class="container-fluid flex-container flex-grow-1">
-      <div class="row">
-        <div class="col">
-          <otx-log-bounds-control></otx-log-bounds-control>
-        </div>
-      </div>
-
       <div class="grid-two-panes flex-grow-1">
         <div class="grid-left-pane">
+          <otx-log-bounds-control></otx-log-bounds-control>
           <div class="mb-3">
             <label for="formGroupExampleInput" class="form-label">Value to draw</label>
             <select class="form-select" multiple [(ngModel)]="selectedStat" (change)="chartSelectionChanged()" [size]="stats.length">

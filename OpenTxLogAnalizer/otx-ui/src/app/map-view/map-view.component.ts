@@ -9,13 +9,9 @@ import {StatTriple} from "../../services/IStats";
 @Component({
   selector: 'otx-map-view',
   template: `
-    <div class="row">
-      <div class="col">
-        <otx-log-bounds-control></otx-log-bounds-control>
-      </div>
-    </div>
     <div class="grid-two-panes flex-grow-1">
       <div class="grid-left-pane">
+        <otx-log-bounds-control></otx-log-bounds-control>
         <div class="mb-3">
           <label for="formGroupExampleInput" class="form-label">Value to draw</label>
           <select class="form-select" multiple [(ngModel)]="selectedStat" (change)="drawTrack()" [size]="stats.length">
