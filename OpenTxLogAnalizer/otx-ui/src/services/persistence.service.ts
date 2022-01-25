@@ -37,6 +37,14 @@ export class PersistenceService {
     this.save("selectedTabPane", v);
   }
 
+  get howToRecordLogsDismissed(): boolean|undefined {
+    return this.load("howToRecordLogsDismissed");
+  }
+
+  set howToRecordLogsDismissed(v: boolean|undefined) {
+    this.save("howToRecordLogsDismissed", v);
+  }
+
   get logProject(): LogProject|undefined {
     return this.load("logProject");
   }

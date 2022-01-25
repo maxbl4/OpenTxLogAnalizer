@@ -9,6 +9,11 @@ import {PersistenceService} from "../services/persistence.service";
 @Component({
   selector: 'otx-root',
   template: `
+    <div class="alert alert-danger alert-dismissible" role="alert" *ngIf="!persistence.howToRecordLogsDismissed">
+      How to record your logs?
+      <a href="https://oscarliang.com/log-gps-coordinates-taranis/" target="_blank" class="alert-link">Click here</a>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" (click)="persistence.howToRecordLogsDismissed = true"></button>
+    </div>
     <!-- Usage -->
     <otx-usage-text-view #usageInfo></otx-usage-text-view>
     <!-- Drop zone -->

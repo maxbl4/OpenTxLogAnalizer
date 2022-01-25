@@ -106,13 +106,13 @@ import {DataManager} from "../../services/data-manager";
               <td>{{data.selectedLog?.stats?.altitude?.max}}</td>
             </tr>
             <tr>
-              <td>Distance to Home, km</td>
+              <td>Distance to Home, meters</td>
               <td>{{data.selectedLog?.stats?.distanceToHome?.min}}</td>
               <td>{{data.selectedLog?.stats?.distanceToHome?.avg}}</td>
               <td>{{data.selectedLog?.stats?.distanceToHome?.max}}</td>
             </tr>
             <tr>
-              <td>Distance traveled, km</td>
+              <td>Distance traveled, meters</td>
               <td></td>
               <td>
                 <div>{{data.selectedLog?.stats?.distanceTraveled?.max}}</div>
