@@ -22,7 +22,7 @@ export class DataManager {
     this.currentLogProject = demoProject;
     this.loadOtxLog();
     this.loadSrtLog();
-    this.updateSelectedLog(0);
+    this.updateSelectedLog();
   }
 
   replaceCurrentLogProject(file: FileSystemFileEntry) {
@@ -56,6 +56,7 @@ export class DataManager {
         const text = await f.text();
         p.srt = {type: "srt", name: file.name, content: text};
         this.loadSrtLog();
+        this.updateSelectedLog();
       });
     }else alert('Only SRT files are supported');
   }

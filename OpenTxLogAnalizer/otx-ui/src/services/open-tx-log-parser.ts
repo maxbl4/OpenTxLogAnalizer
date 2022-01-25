@@ -235,20 +235,29 @@ export class Log implements ILog {
     if (this.rows.length == 0) return;
     this.stats = new Stats();
     let initialized = false;
-    for (let r of this.rows) {
+    for (let i = 0; i < this.rows.length; i++) {
+      const r = this.rows[i];
       for (let k of statKeys) {
         const currentValue = (<any>r)[k] ?? 0;
         if (!initialized) {
           this.stats[k].avg = currentValue;
           this.stats[k].min = currentValue;
+          this.stats[k].minIndex = i;
           this.stats[k].max = currentValue;
-          initialized = true;
+          this.stats[k].maxIndex = i;
         }else {
           this.stats[k].avg += currentValue;
-          if (this.stats[k].max < currentValue) this.stats[k].max = currentValue;
-          if (this.stats[k].min > currentValue) this.stats[k].min = currentValue;
+          if (this.stats[k].max < currentValue) {
+            this.stats[k].max = currentValue;
+            this.stats[k].maxIndex = i;
+          }
+          if (this.stats[k].min > currentValue) {
+            this.stats[k].min = currentValue;
+            this.stats[k].minIndex = i;
+          }
         }
       }
+      initialized = true;
     }
     for (let k of statKeys) {
       this.stats[k].avg = Math.round(this.stats[k].avg / this.rows.length * 10)/10;
@@ -258,7 +267,7 @@ export class Log implements ILog {
   joinSrtLog(srtLog:ILog) {
     let s = 0;
     for (let o of this.rows) {
-      while (srtLog.rows[s].timecode! < o.timecode! && s < srtLog.rows.length)
+      while (s < srtLog.rows.length && srtLog.rows[s].timecode! < o.timecode!)
         s++;
       if (s < srtLog.rows.length) {
         o.djiBitrate = srtLog.rows[s].djiBitrate;
@@ -278,6 +287,7 @@ export class Log implements ILog {
   }
 
   private getPowerUsed() {
+    if (this.rows.length < 1) return 0;
     const last = this.rows[this.rows.length - 1];
     const totalCapacity = (last.capacity ?? 0) - (this.rows[0].capacity ?? 0);
     const numberOfCells = Math.ceil((this.rows[0].rxBattery ?? 0) / 4.2);

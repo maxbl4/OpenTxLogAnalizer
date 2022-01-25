@@ -21,6 +21,14 @@ import {PersistenceService} from "../services/persistence.service";
           </ng-template>
         </ngx-file-drop>
       </div>
+      <div class="col" *ngIf="data.selectedLog">
+        <ngx-file-drop dropZoneLabel="Drop files here" (onFileDrop)="addSrtLog($event)">
+          <ng-template ngx-file-drop-content-tmp let-openFileSelector="openFileSelector">
+            <ng-container *ngIf="data.currentLogProject?.srt?.name">{{data.currentLogProject?.srt?.name}}</ng-container>
+            <ng-container *ngIf="!data.currentLogProject?.srt?.name">DROP DJI SRT here</ng-container>
+          </ng-template>
+        </ngx-file-drop>
+      </div>
       <div class="col-auto align-self-center text-center">
           <button class="btn btn-danger m-1" (click)="usageInfo.show()">How to use?</button><br/>
           <button class="btn btn-primary m-1" (click)="data.loadDemoProject()">DEMO</button>
@@ -147,10 +155,16 @@ export class AppComponent implements OnInit{
   ngOnInit(): void {
   }
 
-  public openOtxLog(files: NgxFileDropEntry[]) {
+  openOtxLog(files: NgxFileDropEntry[]) {
     if (files.length == 0 || !files[0].fileEntry.isFile) return;
     const file = files[0].fileEntry as FileSystemFileEntry;
     this.data.replaceCurrentLogProject(file);
+  }
+
+  addSrtLog(files: NgxFileDropEntry[]) {
+    if (files.length == 0 || !files[0].fileEntry.isFile) return;
+    const file = files[0].fileEntry as FileSystemFileEntry;
+    this.data.attachDjiSrtLog(file);
   }
 
   exportCsv(selectedLog: ILog) {

@@ -3,7 +3,11 @@
   altitude: IStatTriple;
   distanceToHome: IStatTriple;
   distanceTraveled: IStatTriple;
+  sats: IStatTriple;
+  pitchDeg: IStatTriple;
+  throttle: IStatTriple;
 
+  capacity: IStatTriple;
   current: IStatTriple;
   power: IStatTriple;
   rxBattery: IStatTriple;
@@ -15,6 +19,7 @@
   rss1: IStatTriple;
   rss2: IStatTriple;
   rqly: IStatTriple;
+  tpwr: IStatTriple;
   djiDelay: IStatTriple;
   djiBitrate: IStatTriple;
 }
@@ -26,9 +31,13 @@ export class Stats implements IStats {
   }
 
   altitude: IStatTriple = new StatTriple();
+  capacity: IStatTriple = new StatTriple();
   current: IStatTriple = new StatTriple();
   distanceToHome: IStatTriple = new StatTriple();
   distanceTraveled: IStatTriple = new StatTriple();
+  sats: IStatTriple = new StatTriple();
+  throttle: IStatTriple = new StatTriple();
+  pitchDeg: IStatTriple = new StatTriple();
   djiBitrate: IStatTriple = new StatTriple();
   djiDelay: IStatTriple = new StatTriple();
   estimatedFlightTime: IStatTriple = new StatTriple();
@@ -37,6 +46,7 @@ export class Stats implements IStats {
   rqly: IStatTriple = new StatTriple();
   rss1: IStatTriple = new StatTriple();
   rss2: IStatTriple = new StatTriple();
+  tpwr: IStatTriple = new StatTriple();
   rxBattery: IStatTriple = new StatTriple();
   gpsSpeed: IStatTriple = new StatTriple();
   wattPer10Km: IStatTriple = new StatTriple();
@@ -47,6 +57,8 @@ export interface IStatTriple {
   min: number;
   avg: number;
   max: number;
+  minIndex: number;
+  maxIndex: number;
 }
 
 export class StatTriple implements IStatTriple {
@@ -58,6 +70,11 @@ export class StatTriple implements IStatTriple {
   avg: number = 0;
   max: number = 0;
   min: number = 0;
+  minIndex: number = 0;
+  maxIndex: number = 0;
+  get range() {
+    return Math.abs(this.max - this.min);
+  }
 }
 
 export const statKeys:(keyof IStats)[] = <(keyof IStats)[]>Object.keys(new Stats());

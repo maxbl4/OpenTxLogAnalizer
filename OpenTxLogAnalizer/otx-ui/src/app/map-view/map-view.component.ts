@@ -4,6 +4,7 @@ import * as _ from "underscore";
 import {Distance} from "gps";
 import {PersistenceService} from "../../services/persistence.service";
 import {DataManager} from "../../services/data-manager";
+import {StatTriple} from "../../services/IStats";
 
 @Component({
   selector: 'otx-map-view',
@@ -57,7 +58,7 @@ export class MapViewComponent implements OnInit {
     const d = persistence.mapViewPreferences ?? {selectedStat: this.stats[0].field, strokeWidth: 14};
     this.strokeWidth = d.strokeWidth!;
     this.selectedStat = [this.stats.find(x => x.field === d.selectedStat) ?? this.stats[0]];
-    data.selectedLogChange.subscribe(x => this.drawTrack());
+    data.selectedLogChange.subscribe(x => this.drawTrack(true));
   }
 
   ngOnInit(): void {
@@ -89,60 +90,53 @@ export class MapViewComponent implements OnInit {
   private drawMulticolorTrack() {
     const rows = this.data.selectedLog!.rows;
     const selectedStat = this.selectedStat[0];
-    const minRow = <ILogRow>_.min(rows, (x:any) => x[selectedStat.field]);
-    const maxRow = <ILogRow>_.max(rows, (x:any) => x[selectedStat.field]);
-    const minStat = (<any>minRow)[selectedStat.field] ?? 0;
-    const maxStat = (<any>maxRow)[selectedStat.field] ?? 0;
-    const statRange = maxStat - minStat;
-    let minShown = false, maxShown = false;
-    const markerSpacing = Math.round(rows.length / 5);
+    const statData = <StatTriple>(<any>(this.data.selectedLog?.stats))[selectedStat.field]!;
     for (let i = 0; i < rows.length - 1; i++) {
       const stat = (<any>rows[i])[selectedStat.field] ?? 0;
-      let statValue = (stat - minStat)/statRange;
+      let statValue = (stat - statData.min)/statData.range;
       if (selectedStat.lowIsBetter)
         statValue = 1 - statValue;
       let color = this.getMultiColor(statValue);
+      if (!statData.range)
+        color = "00FF00";
       const t = new ymaps.Polyline([[rows[i].lat, rows[i].lon], [rows[i + 1].lat, rows[i + 1].lon]], {balloonContent : stat.toString(), hintContent: stat.toString()},
         {strokeWidth: this.strokeWidth, strokeColor: color});
       this.myMap.geoObjects.add(t);
-      if (i % markerSpacing == 0) {
-        const myPlacemark = new ymaps.Placemark([rows[i].lat, rows[i].lon], {iconCaption: stat.toString()});
-        this.myMap.geoObjects.add(myPlacemark);
-      }
-      if (i == minRow.index && !minShown) {
-        const myPlacemark = new ymaps.Placemark([rows[i].lat, rows[i].lon], {iconCaption: "MIN: " + stat.toString()});
-        this.myMap.geoObjects.add(myPlacemark);
-        minShown = true;
-      }
-      if (i == maxRow.index && !maxShown) {
-        const myPlacemark = new ymaps.Placemark([rows[i].lat, rows[i].lon], {iconCaption: "MAX: " + stat.toString()});
-        this.myMap.geoObjects.add(myPlacemark);
-        maxShown = true;
+    }
+    this.drawMarkers();
+  }
+
+  private drawMarkers() {
+    const rows = this.data.selectedLog!.rows;
+    const selectedStat = this.selectedStat[0];
+    const statData = <StatTriple>(<any>(this.data.selectedLog?.stats))[selectedStat.field]!;
+    this.myMap.geoObjects.add(new ymaps.Placemark([rows[statData.minIndex].lat, rows[statData.minIndex].lon], {iconCaption: "MIN: " + statData.min}));
+    this.myMap.geoObjects.add(new ymaps.Placemark([rows[statData.maxIndex].lat, rows[statData.maxIndex].lon], {iconCaption: "MAX: " + statData.max}));
+    const markerCount = 5;
+    const markerSpacing = Math.round(rows.length / markerCount);
+    for (let i = 0; i < markerCount; i++) {
+      const rowIndex = markerSpacing * i;
+      const stat = (<any>rows[rowIndex])[selectedStat.field] ?? 0;
+      if (Math.abs(statData.minIndex - rowIndex) >= markerSpacing &&
+        Math.abs(statData.maxIndex - rowIndex) >= markerSpacing) {
+        this.myMap.geoObjects.add(new ymaps.Placemark([rows[rowIndex].lat, rows[rowIndex].lon], {iconCaption: stat.toString()}));
       }
     }
   }
 
   private getMultiColor(value:number) {
     if (isNaN(value)|| !isFinite(value) || value < 0 || value > 1)
-      return "FFFFFF";
-    // Black 000000
-    // Red   FF0000
-    // Yell  FFFF00
-    // Green 00FF00
-    // White FFFFFF
-    if (value < 0.25) {
-      return this.colorPart(value * 4) + "0000";
+      return "00ff00";
+    const del = 1/3;
+    if (value < del) {
+      return this.colorPart(value * 3) + "0000";
     }
-    if (value >= 0.25 && value < 0.5) {
-      const v = (value - 0.25) * 4;
-      return "FF" + this.colorPart(v) + "00";
+    if (value >= del && value < del * 2) {
+      const v = (value - del) * 3;
+      return "ff" + this.colorPart(v) + "00";
     }
-    if (value >= 0.5 && value < 0.75) {
-      const v = (value - 0.5) * 4;
-      return this.colorPart(1 - v) + "FF00";
-    }
-    const v = (value - 0.75) * 4;
-    return "FFFF" + this.colorPart(v);
+    const v = Math.round((value - del * 2) * 3 * 255 % 255)/255;
+    return this.colorPart(v) + "ff00";
   }
 
   private colorPart(value: number) {
@@ -178,7 +172,6 @@ export class MapViewComponent implements OnInit {
 
     return {center: [(minLat + maxLat) / 2, (minLon + maxLon) / 2], zoom: zoom };
   }
-
 }
 
 declare const ymaps: any;
