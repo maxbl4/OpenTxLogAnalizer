@@ -4,7 +4,6 @@ import {NgxFileDropEntry} from "ngx-file-drop";
 import {ILog} from "../services/open-tx-log-parser";
 import {DateTime} from "luxon";
 import {DataManager} from "../services/data-manager";
-import {LogChooserViewComponent} from "./log-chooser-view/log-chooser-view.component";
 import {PersistenceService} from "../services/persistence.service";
 
 @Component({
@@ -14,41 +13,42 @@ import {PersistenceService} from "../services/persistence.service";
     <otx-usage-text-view #usageInfo></otx-usage-text-view>
     <!-- Drop zone -->
     <div class="row gx-0">
-      <div class="col">
+      <div class="col align-self-center">
         <ngx-file-drop dropZoneLabel="Drop files here" (onFileDrop)="openOtxLog($event)">
           <ng-template ngx-file-drop-content-tmp let-openFileSelector="openFileSelector">
-            <ng-container *ngIf="data.hasData">{{data.openTxLogFileName}}</ng-container>
-            <ng-container *ngIf="!data.hasData">Drop Open Tx log here</ng-container>
+            <ng-container *ngIf="data.currentLogProject?.otx?.name">{{data.currentLogProject?.otx?.name}}</ng-container>
+            <ng-container *ngIf="!data.currentLogProject?.otx?.name">Drop Open Tx log here</ng-container>
           </ng-template>
         </ngx-file-drop>
       </div>
-      <div class="col-auto p-3">
-        <button class="btn btn-danger" (click)="usageInfo.show()">How to use?</button>
+      <div class="col-auto align-self-center text-center">
+          <button class="btn btn-danger m-1" (click)="usageInfo.show()">How to use?</button><br/>
+          <button class="btn btn-primary m-1" (click)="data.loadDemoProject()">DEMO</button>
       </div>
     </div>
 
     <div class="row flex-container gx-0">
       <div class="col">
-        <otx-log-chooser-view #logChooser [(selectedLog)]="selectedLog" (selectedLogChange)="checkWindowSize()" [logs]="data.originalOtxLogs" (srtLogDropped)="addSrtLog($event)"></otx-log-chooser-view>
+        <otx-log-chooser-view></otx-log-chooser-view>
       </div>
     </div>
 
-    <div *ngIf="selectedLog" class="flex-container flex-grow-1">
-      <ul ngbNav #nav="ngbNav" class="nav-tabs" (shown)="checkWindowSize()" [(activeId)]="selectedTabPane"
-        (activeIdChange)="persistence.selectedTabPane = $event">
+    <div *ngIf="data.selectedLog" class="flex-container flex-grow-1">
+      <ul ngbNav #nav="ngbNav" class="nav-tabs" [(activeId)]="selectedTabPane"
+          (activeIdChange)="persistence.selectedTabPane = $event">
         <li [ngbNavItem]="1">
           <a ngbNavLink>Export Results</a>
           <ng-template ngbNavContent>
             <div class="container">
               <div class="row">
                 <div class="col">
-                  <otx-srt-export-view [selectedLog]="selectedLog" [logFileName]="data.openTxLogFileName"></otx-srt-export-view>
+                  <otx-srt-export-view></otx-srt-export-view>
                 </div>
                 <div class="col">
                   <h3>Export enriched log in CSV format</h3>
                   <p>Additional data is calculated in the output: Distance to Home, Total Trip Distance, Electrical
                     Power, Electrical Efficiency in Watt hour per km</p>
-                  <button class="btn btn-success" (click)="exportCsv(selectedLog)">Export CSV</button>
+                  <button class="btn btn-success" (click)="exportCsv(data.selectedLog)">Export CSV</button>
                 </div>
               </div>
             </div>
@@ -57,7 +57,7 @@ import {PersistenceService} from "../services/persistence.service";
         <li [ngbNavItem]="2">
           <a ngbNavLink>Statistics</a>
           <ng-template ngbNavContent>
-            <otx-statistics-view [selectedLog]="selectedLog"></otx-statistics-view>
+            <otx-statistics-view></otx-statistics-view>
           </ng-template>
         </li>
         <li [ngbNavItem]="3">
@@ -73,13 +73,13 @@ import {PersistenceService} from "../services/persistence.service";
         <li [ngbNavItem]="4">
           <a ngbNavLink>Charts</a>
           <ng-template ngbNavContent>
-            <otx-charts-view [selectedLog]="selectedLog"></otx-charts-view>
+            <otx-charts-view></otx-charts-view>
           </ng-template>
         </li>
         <li [ngbNavItem]="5">
           <a ngbNavLink>Map</a>
           <ng-template ngbNavContent>
-            <otx-map-view [selectedLog]="selectedLog"></otx-map-view>
+            <otx-map-view></otx-map-view>
           </ng-template>
         </li>
       </ul>
@@ -97,12 +97,9 @@ import {PersistenceService} from "../services/persistence.service";
   `]
 })
 export class AppComponent implements OnInit{
-  @ViewChild('logChooser')
-  logChooser?: LogChooserViewComponent;
   @ViewChild('tabPane', { read: ElementRef })
   tabPane?: ElementRef;
   private api: GridApi | undefined;
-  selectedLog?: ILog;
   gridOptions: GridOptions = {
     defaultColDef: {
       resizable: true
@@ -135,8 +132,8 @@ export class AppComponent implements OnInit{
     rowData: [],
     onGridReady: e => {
       this.api = e.api;
-      if (this.selectedLog) {
-        this.api.setRowData(this.selectedLog.rows);
+      if (this.data.selectedLog) {
+        this.api.setRowData(this.data.selectedLog.rows);
       }
     },
     onGridSizeChanged: e => e.api.sizeColumnsToFit()
@@ -145,38 +142,23 @@ export class AppComponent implements OnInit{
 
   constructor(public data: DataManager, public persistence: PersistenceService) {
     this.selectedTabPane = persistence.selectedTabPane ?? 1;
-    window.addEventListener('resize', e => this.checkWindowSize(), true);
   }
 
   ngOnInit(): void {
-      this.checkWindowSize();
   }
 
   public openOtxLog(files: NgxFileDropEntry[]) {
     if (files.length == 0 || !files[0].fileEntry.isFile) return;
-    this.selectedLog = undefined;
     const file = files[0].fileEntry as FileSystemFileEntry;
-    this.data.loadOpenTxLog(file);
-  }
-
-  public addSrtLog(file: FileSystemFileEntry) {
-    this.data.attachDjiSrtLog(this.selectedLog!, file);
+    this.data.replaceCurrentLogProject(file);
   }
 
   exportCsv(selectedLog: ILog) {
     const a = document.createElement('a');
     const objectUrl = URL.createObjectURL(new Blob([this.data.otxParser.exportToCsv(selectedLog)]));
     a.href = objectUrl;
-    a.download = `${this.data.openTxLogFileName.substring(0, this.data.openTxLogFileName.length - 4)}-enriched.csv`;
+    a.download = `${this.data.currentLogProject?.otx.name.substring(0, this.data.currentLogProject?.otx.name.length - 4)}-enriched.csv`;
     a.click();
     URL.revokeObjectURL(objectUrl);
-  }
-
-  checkWindowSize(fromTimeout = false) {
-    if (!fromTimeout) {
-      setTimeout(() => this.checkWindowSize(true));
-      return;
-    }
-    this.data.tabPaneHeight = window.visualViewport.height - (this.tabPane?.nativeElement?.getBoundingClientRect()?.y ?? 0) - 20;
   }
 }

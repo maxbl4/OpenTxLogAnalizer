@@ -10,7 +10,7 @@ import {DataManager} from "../../services/data-manager";
     <div class="container-fluid flex-container flex-grow-1">
       <div class="row">
         <div class="col">
-          <otx-log-bounds-control [selectedLog]="selectedLog" (boundsChange)="chartSelectionChanged()"></otx-log-bounds-control>
+          <otx-log-bounds-control></otx-log-bounds-control>
         </div>
       </div>
 
@@ -49,15 +49,10 @@ import {DataManager} from "../../services/data-manager";
 })
 export class ChartsViewComponent implements OnInit {
   stats = knownStats;
-  private _selectedLog?: ILog;
-  @Input() get selectedLog() {return this._selectedLog;}
-  set selectedLog(v: ILog|undefined) {
-    this._selectedLog = v;
-  }
-
   results = [];
   selectedStat: StatDesc[] = [];
   constructor(private data: DataManager, private persistance: PersistenceService) {
+    data.selectedLogChange.subscribe(x => this.chartSelectionChanged());
   }
 
   ngOnInit(): void {
@@ -71,7 +66,7 @@ export class ChartsViewComponent implements OnInit {
     const data = [];
     for (let f of this.selectedStat) {
       const series = {name: f.name, series:
-          this.selectedLog?.rows.slice(this.data.startRow, this.data.endRow)
+          this.data.selectedLog?.rows
             .map(x => {return {name: x.index, value: (<any>x)[f.field] ?? 0}})};
       data.push(series);
     }

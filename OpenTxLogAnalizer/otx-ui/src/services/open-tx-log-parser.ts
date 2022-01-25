@@ -1,18 +1,17 @@
 import {DateTime, Duration} from "luxon";
 import {LatLon, Distance} from "gps";
 import {Injectable} from "@angular/core";
-import * as _ from "underscore";
-import {Stats} from "./data-manager";
+import {statKeys, IStats, IStatTriple, Stats} from "./IStats";
 
 @Injectable()
 export class OpenTxLogParser {
-  parse(text: string): ILog[] {
+  parse(text: string): Log[] {
     const lines = text.split("\n");
     if (lines.length == 0) return [];
     const fieldNames = this.readHeader(lines[0]);
 
-    const logs:ILog[] = [];
-    let currentLog: ILog|null = null;
+    const logs:Log[] = [];
+    let currentLog: Log|null = null;
     let prevRow: ILogRow|null = null;
     let startTimestamp: DateTime|null = null;
     let home: LatLon = {lat:0,lon:0};
@@ -26,7 +25,7 @@ export class OpenTxLogParser {
       for (let f = 0; f < fieldNames.length; f++) {
         row[fieldNames[f]] = values[f];
       }
-      const typedRow = <ILogRow>row;
+      const typedRow = new LogRow(row);
       typedRow.Date = DateTime.fromISO(row["Date"]);
       typedRow.Time = Duration.fromISOTime(row["Time"]);
       typedRow.timestamp = typedRow.Date.plus(typedRow.Time);
@@ -42,7 +41,6 @@ export class OpenTxLogParser {
       typedRow.txBattery = parseFloat(row["TxBat(V)"]);
       typedRow.rxBattery = parseFloat(row["RxBt(V)"]);
       typedRow.current = parseFloat(row["Curr(A)"]);
-      typedRow.power = Math.round(typedRow.rxBattery * typedRow.current * 10)/10;
       typedRow.capacity = parseFloat(row["Capa(mAh)"]);
       typedRow.batteryPercent = Math.round(parseFloat(row["Bat_(%)"]) * 10)/10;
       typedRow.pitchDeg = Math.round( parseFloat(row["Ptch(rad)"]) * 180 / Math.PI);
@@ -55,8 +53,6 @@ export class OpenTxLogParser {
       typedRow.sats = parseInt(row["Sats"]);
       typedRow.altitude = Math.round(parseFloat(row["Alt(m)"])*10)/10;
       typedRow.gpsSpeed = Math.round(parseFloat(row["GSpd(kmh)"])*10)/10;
-      typedRow.wattPerKm = Math.round(1/typedRow.gpsSpeed * typedRow.power * 100)/10;
-      if (isNaN(typedRow.wattPerKm) || !isFinite(typedRow.wattPerKm)) typedRow.wattPerKm = 0;
       typedRow.distanceTraveled = 0;
       const coords = row["GPS"] as string;
       if (coords && coords.length > 5) {
@@ -67,13 +63,14 @@ export class OpenTxLogParser {
           typedRow.position = {lat:typedRow.lat, lon: typedRow.lon}
         }
       }
+      typedRow.calculate();
 
       if (prevRow === null || (typedRow.timestamp.diff(prevRow.timestamp!).as('seconds') > 10)){
         if (currentLog && prevRow) {
           currentLog.duration = prevRow.timestamp!.diff(startTimestamp!);
-          this.updateTotals(currentLog);
+          currentLog.calculate();
         }
-        currentLog = {timestamp: typedRow.timestamp, rows:[], totalWh: 0, actualMah: 0};
+        currentLog = new Log({timestamp: typedRow.timestamp, rows:[], capacityUsed: 0, powerUsed: 0, correction: 1, powerAvailable: 0});
         logs.push(currentLog);
         startTimestamp = typedRow.timestamp;
         index = 1;
@@ -96,13 +93,13 @@ export class OpenTxLogParser {
 
       typedRow.timecode = typedRow.timestamp.diff(startTimestamp!).as('seconds');
 
-      currentLog!.rows.push(row);
+      currentLog!.rows.push(typedRow);
       prevRow = typedRow;
     }
 
     if (currentLog && prevRow) {
       currentLog.duration = prevRow.timestamp!.diff(startTimestamp!);
-      this.updateTotals(currentLog);
+      currentLog.calculate();
     }
     return logs;
   }
@@ -123,27 +120,6 @@ export class OpenTxLogParser {
 
   readHeader(header: string): string[] {
     return header.split(",").map(x => x.trim());
-  }
-
-  private updateTotals(currentLog: ILog) {
-    if (currentLog.rows.length < 2) return;
-    const totalCapacity = ((_.last(currentLog.rows)?.capacity ?? 0) - (currentLog.rows[0].capacity ?? 0)) / 1000;
-    const numberOfCells = Math.round((currentLog.rows[0].rxBattery ?? 0) / 4.2);
-    const totalWh = numberOfCells * 3.7 * totalCapacity;
-    for (let r of currentLog.rows) {
-      r.totalCapacity = Math.round(totalCapacity * 1000);
-      r.totalWh = Math.round(totalWh * 10)/10;
-      if (totalWh === 0 || !r.wattPerKm)
-        r.estimatedRange = 0;
-      else
-        r.estimatedRange = Math.round(totalWh / r.wattPerKm) / 10;
-      if (totalWh === 0 || !r.power) {
-        r.estimatedFlightTime = 0;
-      }
-      else {
-        r.estimatedFlightTime = Math.round(totalWh / r.power * 60 * 10) / 10;
-      }
-    }
   }
 }
 
@@ -217,15 +193,118 @@ export interface ILog {
   rows: ILogRow[];
   isSelected?: boolean;
   srtFileName?: string;
-  stats?: Stats;
-  actualMah: number;
-  totalWh: number;
+  stats?: IStats;
+  capacityUsed: number;
+  powerUsed: number;
+  powerAvailable: number;
+  correction: number;
 }
+
+export class Log implements ILog {
+  constructor(props: ILog) {
+    Object.assign(this, props);
+    this.rows = props.rows.map(x => new LogRow(x));
+    this.capacityUsed = props.capacityUsed;
+    this.powerUsed = props.powerUsed;
+    this.powerAvailable = props.powerAvailable;
+    this.correction = props.correction;
+  }
+
+  calculate() {
+    this.capacityUsed = this.getCapacityUsed();
+    this.powerUsed = this.getPowerUsed();
+    const power = this.powerAvailable > 0 ? this.powerAvailable : this.powerUsed;
+    for (let r of this.rows) {
+      r.calculateEstimations(power);
+    }
+    this.updateStatistics();
+  }
+
+  applyCorrection() {
+    this.rows = this.rows.map(x => {
+      const o = new LogRow(x);
+      o.capacity = Math.round((o.capacity ?? 0) * this.correction * 10) / 10;
+      o.current = Math.round((o.current ?? 0) * this.correction * 10) / 10;
+      o.calculate();
+      return o;
+    });
+    this.calculate();
+  }
+
+  updateStatistics() {
+    if (this.rows.length == 0) return;
+    this.stats = new Stats();
+    let initialized = false;
+    for (let r of this.rows) {
+      for (let k of statKeys) {
+        const currentValue = (<any>r)[k] ?? 0;
+        if (!initialized) {
+          this.stats[k].avg = currentValue;
+          this.stats[k].min = currentValue;
+          this.stats[k].max = currentValue;
+          initialized = true;
+        }else {
+          this.stats[k].avg += currentValue;
+          if (this.stats[k].max < currentValue) this.stats[k].max = currentValue;
+          if (this.stats[k].min > currentValue) this.stats[k].min = currentValue;
+        }
+      }
+    }
+    for (let k of statKeys) {
+      this.stats[k].avg = Math.round(this.stats[k].avg / this.rows.length * 10)/10;
+    }
+  }
+
+  joinSrtLog(srtLog:ILog) {
+    let s = 0;
+    for (let o of this.rows) {
+      while (srtLog.rows[s].timecode! < o.timecode! && s < srtLog.rows.length)
+        s++;
+      if (s < srtLog.rows.length) {
+        o.djiBitrate = srtLog.rows[s].djiBitrate;
+        o.djiDelay = srtLog.rows[s].djiDelay;
+        o.djiChannel = srtLog.rows[s].djiChannel;
+        o.djiSignal = srtLog.rows[s].djiSignal;
+        o.djiGoggleBattery = srtLog.rows[s].djiGoggleBattery;
+      }else {
+        o.djiBitrate = 0;
+        o.djiDelay = 0;
+        o.djiChannel = 0;
+        o.djiSignal = 0;
+        o.djiGoggleBattery = 0;
+      }
+    }
+    this.calculate();
+  }
+
+  private getPowerUsed() {
+    const last = this.rows[this.rows.length - 1];
+    const totalCapacity = (last.capacity ?? 0) - (this.rows[0].capacity ?? 0);
+    const numberOfCells = Math.ceil((this.rows[0].rxBattery ?? 0) / 4.2);
+    return numberOfCells * 3.7 * totalCapacity / 1000;
+  }
+
+  private getCapacityUsed() {
+    if (this.rows.length < 2) return 0;
+    return (this.rows[this.rows.length - 1].capacity ?? 0) - (this.rows[0].capacity ?? 0);
+  }
+
+  timestamp?: DateTime;
+  duration?: Duration;
+  rows: LogRow[];
+  isSelected?: boolean;
+  srtFileName?: string;
+  stats?: IStats;
+  capacityUsed: number;
+  powerUsed: number;
+  powerAvailable: number;
+  correction: number;
+}
+
 
 export interface ILogRow {
   wattPerKm?: number;
-  totalCapacity?: number;
-  totalWh?: number;
+  wattPer10Km?: number;
   estimatedRange?: number;
   estimatedFlightTime?: number;
   index: number;
@@ -249,10 +328,94 @@ export interface ILogRow {
   tpwr?: number;
   rxBattery?: number;
   current?: number;
-  correctCurrent?: number;
   capacity?: number;
   power?: number;
-  correctPower?: number;
+  batteryPercent?: number;
+  pitchDeg?: number;
+  rollDeg?: number;
+  yawDeg?: number;
+  gps?: string;
+  gpsSpeed?: number;
+  heading?: number;
+  altitude?: number;
+  sats?: number;
+  rudder?: number;
+  elevator?: number;
+  throttle?: number;
+  aileron?: number;
+  txBattery?: number;
+  SA?: number;
+  SB?: number;
+  SC?: number;
+  SD?: number;
+  SE?: number;
+  SF?: number;
+  djiSignal?: number;
+  djiChannel?: number;
+  djiDelay?: number;
+  djiGoggleBattery?: number;
+  djiBitrate?: number;
+}
+
+export class LogRow implements ILogRow {
+  constructor(props: ILogRow) {
+    Object.assign(this, props);
+    this.index = props.index;
+  }
+
+  calculate() {
+    if (this.rxBattery && this.current)
+      this.power = Math.round(this.rxBattery * this.current * 10)/10;
+    else this.power = 0;
+
+    if (this.gpsSpeed) {
+      this.wattPerKm = Math.round(1 / this.gpsSpeed * this.power * 10) / 10;
+      this.wattPer10Km = Math.round(1 / this.gpsSpeed * this.power * 100) / 10;
+    }else {
+      this.wattPerKm = 0;
+      this.wattPer10Km = 0;
+    }
+  }
+
+  calculateEstimations(powerUsed: number) {
+    if (powerUsed) {
+      if (this.wattPerKm)
+        this.estimatedRange = Math.round(powerUsed / this.wattPerKm * 10) / 10;
+      if (this.power)
+        this.estimatedFlightTime = Math.round(powerUsed / this.power * 60 * 10) / 10;
+      return;
+    }
+    this.estimatedFlightTime = 0;
+    this.estimatedRange = 0;
+  }
+
+  wattPerKm?: number;
+  wattPer10Km?: number;
+  estimatedRange?: number;
+  estimatedFlightTime?: number;
+  index: number;
+  timecode?: number;
+  timestamp?: DateTime;
+  lat?: number;
+  lon?: number;
+  position?: LatLon;
+  distanceToHome?: number;
+  distanceTraveled?: number;
+  Date?: DateTime
+  Time?: Duration
+  rss1?: number;
+  rss2?: number;
+  rqly?: number;
+  rsnr?: number;
+  rfmd?: number;
+  trss?: number;
+  tqly?: number;
+  tsnr?: number;
+  tpwr?: number;
+  rxBattery?: number;
+  current?: number;
+  capacity?: number;
+  power?: number;
   batteryPercent?: number;
   pitchDeg?: number;
   rollDeg?: number;

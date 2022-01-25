@@ -1,11 +1,11 @@
-﻿import {ILog, ILogRow} from "./open-tx-log-parser";
+﻿import {ILogRow, Log} from "./open-tx-log-parser";
 import {Injectable} from "@angular/core";
 import {Duration} from "luxon";
 import * as _ from "underscore";
 
 @Injectable()
 export class SrtParser {
-  parse(text: string): ILog {
+  parse(text: string): Log {
     const lines = text.split("\n");
     const rows = [];
     let i = 0;
@@ -40,6 +40,6 @@ export class SrtParser {
 
       i++;
     }
-    return {rows:rows, duration: _.last(rows)?.Time, totalWh: 0, actualMah: 0};
+    return new Log({rows:rows, duration: _.last(rows)?.Time, capacityUsed: 0, powerUsed: 0, powerAvailable: 0, correction: 1});
   }
 }

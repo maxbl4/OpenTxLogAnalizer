@@ -10,7 +10,7 @@ import {DataManager} from "../../services/data-manager";
   template: `
     <div class="row">
       <div class="col">
-        <otx-log-bounds-control [selectedLog]="selectedLog" (boundsChange)="drawTrack()"></otx-log-bounds-control>
+        <otx-log-bounds-control></otx-log-bounds-control>
       </div>
     </div>
     <div class="grid-two-panes flex-grow-1">
@@ -49,20 +49,15 @@ import {DataManager} from "../../services/data-manager";
 })
 export class MapViewComponent implements OnInit {
   stats = knownStats;
-  private _selectedLog?: ILog;
   private myMap: any;
   selectedStat = [this.stats[0]];
   strokeWidth = 14;
-  @Input() get selectedLog() {return this._selectedLog;}
-  set selectedLog(v: ILog|undefined) {
-    this._selectedLog = v;
-    this.drawTrack(true);
-  }
 
   constructor(private persistence: PersistenceService, public data: DataManager) {
     const d = persistence.mapViewPreferences ?? {selectedStat: this.stats[0].field, strokeWidth: 14};
     this.strokeWidth = d.strokeWidth!;
     this.selectedStat = [this.stats.find(x => x.field === d.selectedStat) ?? this.stats[0]];
+    data.selectedLogChange.subscribe(x => this.drawTrack());
   }
 
   ngOnInit(): void {
@@ -78,10 +73,10 @@ export class MapViewComponent implements OnInit {
   }
 
   drawTrack(setCenter:boolean = false) {
-    if (!this._selectedLog || !this.myMap) return;
+    if (!this.data.selectedLog || !this.myMap) return;
     this.persistence.mapViewPreferences = {selectedStat: this.selectedStat[0].field, strokeWidth: this.strokeWidth};
     this.myMap.geoObjects.removeAll();
-    let coords = this.getRows().map(x => [x.lat, x.lon]);
+    let coords = this.data.selectedLog.rows.map(x => [x.lat, x.lon]);
     const myPolyline = new ymaps.Polyline(coords, undefined, {strokeWidth: parseInt(<any>this.strokeWidth) + 2, strokeColor: ["FFFFFF"]});
     this.myMap.geoObjects.add(myPolyline);
     if (setCenter) {
@@ -92,7 +87,7 @@ export class MapViewComponent implements OnInit {
   }
 
   private drawMulticolorTrack() {
-    const rows = this.getRows();
+    const rows = this.data.selectedLog!.rows;
     const selectedStat = this.selectedStat[0];
     const minRow = <ILogRow>_.min(rows, (x:any) => x[selectedStat.field]);
     const maxRow = <ILogRow>_.max(rows, (x:any) => x[selectedStat.field]);
@@ -102,13 +97,11 @@ export class MapViewComponent implements OnInit {
     let minShown = false, maxShown = false;
     const markerSpacing = Math.round(rows.length / 5);
     for (let i = 0; i < rows.length - 1; i++) {
-      const stat = (<any>rows[i])[selectedStat.field];
+      const stat = (<any>rows[i])[selectedStat.field] ?? 0;
       let statValue = (stat - minStat)/statRange;
       if (selectedStat.lowIsBetter)
         statValue = 1 - statValue;
       let color = this.getMultiColor(statValue);
-      if (statRange == 0)
-        color = "FFFFFF";
       const t = new ymaps.Polyline([[rows[i].lat, rows[i].lon], [rows[i + 1].lat, rows[i + 1].lon]], {balloonContent : stat.toString(), hintContent: stat.toString()},
         {strokeWidth: this.strokeWidth, strokeColor: color});
       this.myMap.geoObjects.add(t);
@@ -130,6 +123,8 @@ export class MapViewComponent implements OnInit {
   }
 
   private getMultiColor(value:number) {
+    if (isNaN(value)|| !isFinite(value) || value < 0 || value > 1)
+      return "FFFFFF";
     // Black 000000
     // Red   FF0000
     // Yell  FFFF00
@@ -184,9 +179,6 @@ export class MapViewComponent implements OnInit {
     return {center: [(minLat + maxLat) / 2, (minLon + maxLon) / 2], zoom: zoom };
   }
 
-  private getRows() {
-    return this.selectedLog?.rows.slice(this.data.startRow, this.data.endRow) ?? [];
-  }
 }
 
 declare const ymaps: any;
@@ -213,9 +205,11 @@ export const knownStats: StatDesc[] = [
   {name: "Current", field: "current", lowIsBetter: true},
   {name: "Capacity", field: "capacity", lowIsBetter: true},
   {name: "Watt hour per km", field: "wattPerKm", lowIsBetter: true},
+  {name: "Watt hour per 10 km", field: "wattPer10Km", lowIsBetter: true},
   {name: "Estimated Range", field: "estimatedRange"},
   {name: "Estimated Time", field: "estimatedFlightTime"},
-  {name: "RSSI dbm", field: "rss1"},
+  {name: "RSSI dbm 1", field: "rss1"},
+  {name: "RSSI dbm 2", field: "rss2"},
   {name: "LQ", field: "rqly"},
   {name: "Tx Power", field: "tpwr", lowIsBetter: true},
   {name: "DJI Latency", field: "djiDelay", lowIsBetter: true},

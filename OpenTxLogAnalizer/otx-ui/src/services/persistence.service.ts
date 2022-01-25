@@ -1,6 +1,7 @@
 import {Injectable} from "@angular/core";
 import {OsdItems} from "./srt-generator";
 import {MapViewPreferences, StatDesc} from "../app/map-view/map-view.component";
+import {LogProject} from "./data-manager";
 
 @Injectable()
 export class PersistenceService {
@@ -34,6 +35,14 @@ export class PersistenceService {
 
   set selectedTabPane(v: number|undefined) {
     this.save("selectedTabPane", v);
+  }
+
+  get logProject(): LogProject|undefined {
+    return this.load("logProject");
+  }
+
+  set logProject(v: LogProject|undefined) {
+    this.save("logProject", v);
   }
 
   load<T>(key: string) {

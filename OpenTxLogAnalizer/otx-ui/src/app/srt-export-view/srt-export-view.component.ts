@@ -1,7 +1,7 @@
 import {Component, Input, OnInit} from '@angular/core';
 import {OsdItems, SrtGenerator} from "../../services/srt-generator";
-import {ILog} from "../../services/open-tx-log-parser";
 import {PersistenceService} from "../../services/persistence.service";
+import {DataManager} from "../../services/data-manager";
 
 @Component({
   selector: 'otx-srt-export-view',
@@ -55,7 +55,7 @@ import {PersistenceService} from "../../services/persistence.service";
         Power, current and efficiency in estimated Watt hours consumed per 1 km
       </label>
     </div>
-    <button class="btn btn-success" (click)="exportSrt()" [disabled]="!logFileName || !selectedLog">Export SRT with OSD values</button>
+    <button class="btn btn-success" (click)="exportSrt()" [disabled]="!data.selectedLog">Export SRT with OSD values</button>
     <p>After export you can use ffmpeg to burn subtitles into your video</p>
     <input class="form-control" type="text" readonly (click)="selectAll($event)"
            value="ffmpeg -i original_video.mp4 -vf subtitles=generated_subtitles.srt result_video.mp4">
@@ -74,21 +74,21 @@ export class SrtExportViewComponent implements OnInit {
     battery: true,
     power: true,
   };
-  @Input() logFileName?: string;
-  @Input() selectedLog?: ILog;
 
-  constructor(private srtGenerator: SrtGenerator, private persistance: PersistenceService) { }
+  constructor(public data: DataManager, private srtGenerator: SrtGenerator, private persistance: PersistenceService) { }
 
   ngOnInit(): void {
     this.osdItems = this.persistance.srtExport_osdItems ?? this.osdItems;
   }
 
   exportSrt() {
+    if (!this.data.currentLogProject) return;
+    const fileName = this.data.currentLogProject.otx.name;
     this.persistance.srtExport_osdItems = this.osdItems;
     const a = document.createElement('a');
-    const objectUrl = URL.createObjectURL(new Blob([this.srtGenerator.exportSrt(this.selectedLog!, this.osdItems)]));
+    const objectUrl = URL.createObjectURL(new Blob([this.srtGenerator.exportSrt(this.data.selectedLog!, this.osdItems)]));
     a.href = objectUrl;
-    a.download = `${this.logFileName!.substring(0, this.logFileName!.length - 4)}.srt`;
+    a.download = `${fileName.substring(0, fileName.length - 4)}.srt`;
     a.click();
     URL.revokeObjectURL(objectUrl);
   }
