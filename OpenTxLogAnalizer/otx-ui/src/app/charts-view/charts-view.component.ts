@@ -59,6 +59,7 @@ export class ChartsViewComponent implements OnInit {
   xAxisTypes: xAxisType[] = [
     {name: "Index", field: "index"},
     {name: "Time, s", field: "timecode"},
+    {name: "Trip distance, m", field: "distanceTraveled"},
     {name: "Home distance, m", field: "distanceToHome"},
   ];
   selectedXAxisType = this.xAxisTypes[0];

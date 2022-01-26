@@ -1,6 +1,4 @@
-import {Component, Input, OnInit} from '@angular/core';
-import {ILog, ILogRow} from "../../services/open-tx-log-parser";
-import * as _ from "underscore";
+import {Component, OnInit} from '@angular/core';
 import {Distance} from "gps";
 import {PersistenceService} from "../../services/persistence.service";
 import {DataManager} from "../../services/data-manager";
@@ -49,6 +47,7 @@ export class MapViewComponent implements OnInit {
   private myMap: any;
   selectedStat = [this.stats[0]];
   strokeWidth = 14;
+  private objectManager: any;
 
   constructor(private persistence: PersistenceService, public data: DataManager) {
     const d = persistence.mapViewPreferences ?? {selectedStat: this.stats[0].field, strokeWidth: 14};
@@ -64,7 +63,8 @@ export class MapViewComponent implements OnInit {
         controls: ['typeSelector', 'fullscreenControl', 'zoomControl', 'rulerControl'],
         zoom: 7
       });
-      this.myMap.setType('yandex#hybrid')
+      this.myMap.setType('yandex#hybrid');
+      this.objectManager = new ymaps.ObjectManager({});
       this.drawTrack(true);
     });
   }
@@ -73,17 +73,27 @@ export class MapViewComponent implements OnInit {
     if (!this.data.selectedLog || !this.myMap) return;
     this.persistence.mapViewPreferences = {selectedStat: this.selectedStat[0].field, strokeWidth: this.strokeWidth};
     this.myMap.geoObjects.removeAll();
+    this.objectManager.removeAll();
+    this.myMap.geoObjects.add(this.objectManager);
     let coords = this.data.selectedLog.rows.map(x => [x.lat, x.lon]);
-    const myPolyline = new ymaps.Polyline(coords, undefined, {strokeWidth: parseInt(<any>this.strokeWidth) + 2, strokeColor: ["FFFFFF"]});
-    this.myMap.geoObjects.add(myPolyline);
+    const objectManagerData: any = {type: "FeatureCollection",
+      features: [{
+        type: 'Feature',
+        id: 0,
+        geometry: {
+          type: 'LineString',
+          coordinates: coords
+        },
+        options: {strokeWidth: parseInt(<any>this.strokeWidth) + 2, strokeColor: ["FFFFFF"]}
+      }]};
     if (setCenter) {
       const c = this.findTrackCenter(coords);
       this.myMap.setCenter(c.center, c.zoom);
     }
-    this.drawMulticolorTrack();
+    this.drawMulticolorTrack(objectManagerData);
   }
 
-  private drawMulticolorTrack() {
+  private drawMulticolorTrack(objectManagerData: any) {
     const rows = this.data.selectedLog!.rows;
     const selectedStat = this.selectedStat[0];
     const statData = <StatTriple>(<any>(this.data.selectedLog?.stats))[selectedStat.field]!;
@@ -95,9 +105,19 @@ export class MapViewComponent implements OnInit {
       let color = this.getMultiColor(statValue);
       if (!statData.range)
         color = "00FF00";
-      const t = new ymaps.Polyline([[rows[i].lat, rows[i].lon], [rows[i + 1].lat, rows[i + 1].lon]], {balloonContent : stat.toString(), hintContent: stat.toString()},
-        {strokeWidth: this.strokeWidth, strokeColor: color});
-      this.myMap.geoObjects.add(t);
+      objectManagerData.features.push({
+        type: 'Feature',
+        id: i,
+        geometry: {
+          type: 'LineString',
+          coordinates: [[rows[i].lat, rows[i].lon], [rows[i + 1].lat, rows[i + 1].lon]]
+        },
+        properties: {balloonContent : stat.toString(), hintContent: stat.toString()},
+        options: {
+          strokeWidth: this.strokeWidth, strokeColor: color, zIndex: 1000, zIndexActive: 1500
+        }
+      });
+      this.objectManager.add(objectManagerData);
     }
     this.drawMarkers();
   }
