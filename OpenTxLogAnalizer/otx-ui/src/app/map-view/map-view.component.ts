@@ -11,13 +11,13 @@ import {StatTriple} from "../../services/IStats";
   template: `
     <div class="grid-two-panes flex-grow-1">
       <div class="grid-left-pane">
-        <otx-log-bounds-control></otx-log-bounds-control>
         <div class="mb-3">
           <label for="formGroupExampleInput" class="form-label">Value to draw</label>
           <select class="form-select" multiple [(ngModel)]="selectedStat" (change)="drawTrack()" [size]="stats.length">
             <option [value]="s" *ngFor="let s of stats">{{s.name}}</option>
           </select>
         </div>
+        <otx-log-bounds-control></otx-log-bounds-control>
         <div class="mb-3">
           <label for="formGroupExampleInput" class="form-label">Line Width</label>
           <select class="form-select" aria-label="Default select example" [(ngModel)]="strokeWidth" (change)="drawTrack()">

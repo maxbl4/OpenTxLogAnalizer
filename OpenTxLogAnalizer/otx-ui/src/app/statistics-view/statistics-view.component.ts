@@ -55,7 +55,7 @@ import {DataManager} from "../../services/data-manager";
             </tr>
             <tr>
               <td>Estimated range, km <span class="badge bg-secondary"
-                                            ngbTooltip="Considering the total battery capacity used, how far we could fly with given efficiency">???</span>
+                                            ngbTooltip="Considering the total battery capacity used, how far we could fly with given efficiency">?</span>
               </td>
               <td>{{data.selectedLog?.stats?.estimatedRange?.min}}</td>
               <td>{{data.selectedLog?.stats?.estimatedRange?.avg}}</td>
@@ -63,7 +63,7 @@ import {DataManager} from "../../services/data-manager";
             </tr>
             <tr>
               <td>Estimated flight time, m <span class="badge bg-secondary"
-                                                 ngbTooltip="Considering the total battery capacity used, how long can we fly with given power">???</span>
+                                                 ngbTooltip="Considering the total battery capacity used, how long can we fly with given power">?</span>
               </td>
               <td>{{data.selectedLog?.stats?.estimatedFlightTime?.min}}</td>
               <td>{{data.selectedLog?.stats?.estimatedFlightTime?.avg}}</td>
