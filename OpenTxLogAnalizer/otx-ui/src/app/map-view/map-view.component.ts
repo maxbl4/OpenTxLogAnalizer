@@ -3,6 +3,8 @@ import {Distance} from "gps";
 import {PersistenceService} from "../../services/persistence.service";
 import {DataManager} from "../../services/data-manager";
 import {StatTriple} from "../../services/IStats";
+import {LogRow} from "../../services/open-tx-log-parser";
+import * as ma from '@vascosantos/moving-average';
 
 @Component({
   selector: 'otx-map-view',
@@ -123,22 +125,54 @@ export class MapViewComponent implements OnInit {
   }
 
   private drawMarkers() {
-    const rows = this.data.selectedLog!.rows;
     const selectedStat = this.selectedStat[0];
     const statData = <StatTriple>(<any>(this.data.selectedLog?.stats))[selectedStat.field]!;
-    this.myMap.geoObjects.add(new ymaps.Placemark([rows[statData.minIndex].lat, rows[statData.minIndex].lon], {iconCaption: "MIN: " + statData.min}));
-    this.myMap.geoObjects.add(new ymaps.Placemark([rows[statData.maxIndex].lat, rows[statData.maxIndex].lon], {iconCaption: "MAX: " + statData.max}));
-    const markerCount = 5;
-    const markerSpacing = Math.round(rows.length / markerCount);
-    for (let i = 0; i < markerCount; i++) {
-      const rowIndex = markerSpacing * i;
-      const stat = (<any>rows[rowIndex])[selectedStat.field] ?? 0;
-      if (Math.abs(statData.minIndex - rowIndex) >= markerSpacing &&
-        Math.abs(statData.maxIndex - rowIndex) >= markerSpacing) {
-        this.myMap.geoObjects.add(new ymaps.Placemark([rows[rowIndex].lat, rows[rowIndex].lon], {iconCaption: stat.toString()}));
-      }
+    const points = this.findInterestingPoint();
+    this.myMap.geoObjects.add(new ymaps.Placemark([points[0].lat, points[0].lon], {iconCaption: "MIN: " + statData.min}));
+    this.myMap.geoObjects.add(new ymaps.Placemark([points[1].lat, points[1].lon], {iconCaption: "MAX: " + statData.max}));
+
+    for (let i = 2; i < points.length; i++) {
+      const stat = (<any>points[i])[selectedStat.field] ?? 0;
+      this.myMap.geoObjects.add(new ymaps.Placemark([points[i].lat, points[i].lon], {iconCaption: stat.toString()}));
     }
   }
+
+  private findInterestingPoint(pointCount: number = 6) {
+    if (this.data.selectedLog!.rows.length < pointCount + 2)
+      return [];
+    const selectedStat = this.selectedStat[0];
+    const statData = <StatTriple>(<any>(this.data.selectedLog?.stats))[selectedStat.field]!;
+    const result: LogRow[] = [
+      this.data.selectedLog!.rows[statData.minIndex],
+      this.data.selectedLog!.rows[statData.maxIndex],
+    ];
+    let rows = [...this.data.selectedLog!.rows];
+    rows.sort((a,b) =>
+      ((<any>a)[selectedStat.field] ?? 0) - ((<any>b)[selectedStat.field] ?? 0));
+    const minSpacing = rows.length / (pointCount + 2);
+    const usedValues = new Set<number>([statData.min, statData.max]);
+    for (let side = 0; side < 2; side++) {
+      let candidatesFound = 0;
+      let i = 1;
+      while (i < rows.length && candidatesFound < pointCount / 2) {
+        const candidate = rows[i];
+        const stat = (<any>candidate)[selectedStat.field] ?? 0;
+        if (!usedValues.has(stat)) {
+          const blockingPoint = result.find(x => Math.abs(x.index - candidate.index) <= minSpacing);
+          if (!blockingPoint) {
+            result.push(candidate);
+            //usedValues.add(stat);
+            candidatesFound++;
+          }
+        }
+        i++;
+      }
+      rows.reverse();
+    }
+    return result;
+  }
+
+
 
   private getMultiColor(value:number) {
     if (isNaN(value)|| !isFinite(value) || value < 0 || value > 1)
