@@ -4,7 +4,6 @@ import {PersistenceService} from "../../services/persistence.service";
 import {DataManager} from "../../services/data-manager";
 import {StatTriple} from "../../services/IStats";
 import {LogRow} from "../../services/open-tx-log-parser";
-import * as ma from '@vascosantos/moving-average';
 
 @Component({
   selector: 'otx-map-view',
@@ -50,6 +49,7 @@ export class MapViewComponent implements OnInit {
   selectedStat = [this.stats[0]];
   strokeWidth = 14;
   private objectManager: any;
+  smoothValues: boolean = false;
 
   constructor(private persistence: PersistenceService, public data: DataManager) {
     const d = persistence.mapViewPreferences ?? {selectedStat: this.stats[0].field, strokeWidth: 14};
@@ -146,33 +146,52 @@ export class MapViewComponent implements OnInit {
       this.data.selectedLog!.rows[statData.minIndex],
       this.data.selectedLog!.rows[statData.maxIndex],
     ];
-    let rows = [...this.data.selectedLog!.rows];
-    rows.sort((a,b) =>
-      ((<any>a)[selectedStat.field] ?? 0) - ((<any>b)[selectedStat.field] ?? 0));
-    const minSpacing = rows.length / (pointCount + 2);
-    const usedValues = new Set<number>([statData.min, statData.max]);
-    for (let side = 0; side < 2; side++) {
-      let candidatesFound = 0;
-      let i = 1;
-      while (i < rows.length && candidatesFound < pointCount / 2) {
-        const candidate = rows[i];
-        const stat = (<any>candidate)[selectedStat.field] ?? 0;
-        if (!usedValues.has(stat)) {
-          const blockingPoint = result.find(x => Math.abs(x.index - candidate.index) <= minSpacing);
-          if (!blockingPoint) {
-            result.push(candidate);
-            //usedValues.add(stat);
-            candidatesFound++;
-          }
-        }
-        i++;
+    const rows = this.data.selectedLog!.rows;
+    const minSpacing = Math.round(rows.length / (pointCount + 2));
+    const window = 50;
+    let i = 0;
+    const data = [];
+    while (i + window < rows.length) {
+      data.push(this.minMax(rows, i, window, statData));
+      i += window / 5;
+    }
+    if (selectedStat.lowIsBetter)
+      data.sort((a,b) => b.value - a.value);
+    else
+      data.sort((a,b) => a.value - b.value);
+    i = 0;
+    while (i < data.length) {
+      const candidate = data[i];
+      if (!result.find(x => Math.abs(x.index - candidate.index) <= minSpacing)) {
+        result.push(rows[candidate.index]);
       }
-      rows.reverse();
+      i++;
     }
     return result;
   }
 
-
+  private minMax(rows: LogRow[], start: number, end: number, statData: StatTriple) {
+    const selectedStat = this.selectedStat[0];
+    const stat = (<any>rows[start])[selectedStat.field] ?? 0;
+    let min = stat, max = stat, minIndex = start, maxIndex = start, avg = stat;
+    for (let i = start; i < end; i++) {
+      const stat = (<any>rows[i])[selectedStat.field] ?? 0;
+      avg += stat;
+      if (min > stat) {
+        min = stat;
+        minIndex = i;
+      }
+      if (max < stat) {
+        max = stat;
+        maxIndex = i;
+      }
+    }
+    avg = avg / (end - start);
+    if (Math.abs(min - avg) > Math.abs(max - avg))
+      return {value: min, index: minIndex};
+    else
+      return {value: max, index: maxIndex};
+  }
 
   private getMultiColor(value:number) {
     if (isNaN(value)|| !isFinite(value) || value < 0 || value > 1)
