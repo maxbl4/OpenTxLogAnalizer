@@ -49,7 +49,7 @@ export class MapViewComponent implements OnInit {
   selectedStat = [this.stats[0]];
   strokeWidth = 14;
   private objectManager: any;
-  smoothValues: boolean = false;
+  private trackCenter?: { trackBounds: { minLon: number; maxLat: number; minLat: number; maxLon: number }; center: number[]; zoom: number, trackSize: number };
 
   constructor(private persistence: PersistenceService, public data: DataManager) {
     const d = persistence.mapViewPreferences ?? {selectedStat: this.stats[0].field, strokeWidth: 14};
@@ -88,9 +88,9 @@ export class MapViewComponent implements OnInit {
         },
         options: {strokeWidth: parseInt(<any>this.strokeWidth) + 2, strokeColor: ["FFFFFF"]}
       }]};
+    this.trackCenter = this.findTrackCenter(coords);
     if (setCenter) {
-      const c = this.findTrackCenter(coords);
-      this.myMap.setCenter(c.center, c.zoom);
+      this.myMap.setCenter(this.trackCenter.center, this.trackCenter.zoom);
     }
     this.drawMulticolorTrack(objectManagerData);
   }
@@ -114,7 +114,7 @@ export class MapViewComponent implements OnInit {
           type: 'LineString',
           coordinates: [[rows[i].lat, rows[i].lon], [rows[i + 1].lat, rows[i + 1].lon]]
         },
-        properties: {balloonContent : stat.toString(), hintContent: stat.toString()},
+        properties: {balloonContent : `[${i+1}] ${stat}`, hintContent: `${stat}`},
         options: {
           strokeWidth: this.strokeWidth, strokeColor: color, zIndex: 1000, zIndexActive: 1500
         }
@@ -128,16 +128,16 @@ export class MapViewComponent implements OnInit {
     const selectedStat = this.selectedStat[0];
     const statData = <StatTriple>(<any>(this.data.selectedLog?.stats))[selectedStat.field]!;
     const points = this.findInterestingPoint();
-    this.myMap.geoObjects.add(new ymaps.Placemark([points[0].lat, points[0].lon], {iconCaption: "MIN: " + statData.min}));
-    this.myMap.geoObjects.add(new ymaps.Placemark([points[1].lat, points[1].lon], {iconCaption: "MAX: " + statData.max}));
+    this.myMap.geoObjects.add(new ymaps.Placemark([points[0].lat, points[0].lon], {iconCaption: `MIN: ` + statData.min}));
+    this.myMap.geoObjects.add(new ymaps.Placemark([points[1].lat, points[1].lon], {iconCaption: `MAX: ` + statData.max}));
 
     for (let i = 2; i < points.length; i++) {
       const stat = (<any>points[i])[selectedStat.field] ?? 0;
-      this.myMap.geoObjects.add(new ymaps.Placemark([points[i].lat, points[i].lon], {iconCaption: stat.toString()}));
+      this.myMap.geoObjects.add(new ymaps.Placemark([points[i].lat, points[i].lon], {iconCaption: `${stat}`}));
     }
   }
 
-  private findInterestingPoint(pointCount: number = 6) {
+  private findInterestingPoint(pointCount: number = 10) {
     if (this.data.selectedLog!.rows.length < pointCount + 2)
       return [];
     const selectedStat = this.selectedStat[0];
@@ -148,7 +148,7 @@ export class MapViewComponent implements OnInit {
     ];
     const rows = this.data.selectedLog!.rows;
     const minSpacing = Math.round(rows.length / (pointCount + 2));
-    const window = 50;
+    const window = 100;
     let i = 0;
     const data = [];
     while (i + window < rows.length) {
@@ -160,7 +160,7 @@ export class MapViewComponent implements OnInit {
     else
       data.sort((a,b) => a.value - b.value);
     i = 0;
-    while (i < data.length) {
+    while (i < data.length && result.length < pointCount) {
       const candidate = data[i];
       if (!result.find(x => Math.abs(x.index - candidate.index) <= minSpacing)) {
         result.push(rows[candidate.index]);
@@ -170,12 +170,12 @@ export class MapViewComponent implements OnInit {
     return result;
   }
 
-  private minMax(rows: LogRow[], start: number, end: number, statData: StatTriple) {
+  private minMax(rows: LogRow[], start: number, window: number, statData: StatTriple) {
     const selectedStat = this.selectedStat[0];
     const stat = (<any>rows[start])[selectedStat.field] ?? 0;
     let min = stat, max = stat, minIndex = start, maxIndex = start, avg = stat;
-    for (let i = start; i < end; i++) {
-      const stat = (<any>rows[i])[selectedStat.field] ?? 0;
+    for (let i = start; i < start + window; i++) {
+      let stat = (<any>rows[i])[selectedStat.field] ?? 0;
       avg += stat;
       if (min > stat) {
         min = stat;
@@ -186,11 +186,11 @@ export class MapViewComponent implements OnInit {
         maxIndex = i;
       }
     }
-    avg = avg / (end - start);
+    avg = avg / window;
     if (Math.abs(min - avg) > Math.abs(max - avg))
-      return {value: min, index: minIndex};
+      return {value: min, index: minIndex - 1, difference: Math.abs(min - avg)};
     else
-      return {value: max, index: maxIndex};
+      return {value: max, index: maxIndex - 1, difference: Math.abs(max - avg)};
   }
 
   private getMultiColor(value:number) {
@@ -224,9 +224,7 @@ export class MapViewComponent implements OnInit {
       if (c[1]! < minLon) minLon = c[1]!;
     }
     const dist = Math.max(Distance(minLat, minLon, minLat, maxLon),
-        Distance(maxLat, minLon, maxLat, maxLon),
-        Distance(minLat, minLon, maxLat, minLon),
-        Distance(minLat, maxLon, maxLat, maxLon))
+        Distance(minLat, minLon, maxLat, minLon))
       * 1000;
     let zoom = 11;
     if (dist < 20480) zoom = 11;
@@ -239,7 +237,7 @@ export class MapViewComponent implements OnInit {
     if (dist < 160) zoom = 18;
     if (dist < 80) zoom = 19;
 
-    return {center: [(minLat + maxLat) / 2, (minLon + maxLon) / 2], zoom: zoom };
+    return {center: [(minLat + maxLat) / 2, (minLon + maxLon) / 2], zoom: zoom, trackBounds: {minLat: minLat, minLon: minLon, maxLat: maxLat, maxLon: maxLon}, trackSize: dist };
   }
 }
 
