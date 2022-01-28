@@ -119,8 +119,8 @@ export class MapViewComponent implements OnInit {
           strokeWidth: this.strokeWidth, strokeColor: color, zIndex: 1000, zIndexActive: 1500
         }
       });
-      this.objectManager.add(objectManagerData);
     }
+    this.objectManager.add(objectManagerData);
     this.drawMarkers();
   }
 
