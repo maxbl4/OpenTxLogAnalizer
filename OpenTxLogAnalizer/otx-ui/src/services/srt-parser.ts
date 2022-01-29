@@ -15,7 +15,7 @@ export class SrtParser {
       let rowIndex = parseInt(lines[i * 4]);
       let timecode = Duration.fromISOTime(lines[i * 4 + 1].split(" ")[0]);
       let fields = lines[i * 4 + 2].split(" ");
-      const resultRow: ILogRow = {index: rowIndex, timecode: timecode.as("seconds"), Time: timecode};
+      const resultRow: ILogRow = {index: rowIndex, timecode: timecode.as("seconds"), Time: timecode.toISOTime()};
       rows.push(resultRow);
       for (let f of fields) {
         const fv = f.split(":");

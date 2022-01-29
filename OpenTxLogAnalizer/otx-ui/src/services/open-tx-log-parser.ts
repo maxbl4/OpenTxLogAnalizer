@@ -1,11 +1,9 @@
 import {DateTime, Duration} from "luxon";
 import {LatLon, Distance} from "gps";
-import {Injectable} from "@angular/core";
-import {statKeys, IStats, IStatTriple, Stats} from "./IStats";
+import {statKeys, IStats, Stats} from "./IStats";
 
-@Injectable()
 export class OpenTxLogParser {
-  parse(text: string): Log[] {
+  parse(text: string, progress:(v:number, max:number) => void): Log[] {
     const lines = text.split("\n");
     if (lines.length == 0) return [];
     const fieldNames = this.readHeader(lines[0]);
@@ -18,6 +16,7 @@ export class OpenTxLogParser {
     let index = 1;
 
     for (let i = 1; i < lines.length; i++){
+      progress(i, lines.length);
       const values = lines[i].split(",");
       if (values.length != fieldNames.length)
         continue;
@@ -26,9 +25,7 @@ export class OpenTxLogParser {
         row[fieldNames[f]] = values[f];
       }
       const typedRow = new LogRow(row);
-      typedRow.Date = DateTime.fromISO(row["Date"]);
-      typedRow.Time = Duration.fromISOTime(row["Time"]);
-      typedRow.timestamp = typedRow.Date.plus(typedRow.Time);
+      typedRow.timestamp = DateTime.fromISO(typedRow.Date!).plus(Duration.fromISOTime(typedRow.Time!)).toJSDate();
       typedRow.rss1 = parseInt(row["1RSS(dB)"]);
       typedRow.rss2 = parseInt(row["2RSS(dB)"]);
       typedRow.rqly = parseInt(row["RQly(%)"]);
@@ -65,14 +62,14 @@ export class OpenTxLogParser {
       }
       typedRow.calculate();
 
-      if (prevRow === null || (typedRow.timestamp.diff(prevRow.timestamp!).as('seconds') > 10)){
+      if (prevRow === null || (DateTime.fromJSDate(typedRow.timestamp!).diff(DateTime.fromJSDate(prevRow.timestamp!)).as('seconds') > 10)){
         if (currentLog && prevRow) {
-          currentLog.duration = prevRow.timestamp!.diff(startTimestamp!);
+          currentLog.duration = DateTime.fromJSDate(prevRow.timestamp!).diff(startTimestamp!).toISOTime();
           currentLog.calculate();
         }
         currentLog = new Log({timestamp: typedRow.timestamp, rows:[], capacityUsed: 0, powerUsed: 0, correction: 1, powerAvailable: 0});
         logs.push(currentLog);
-        startTimestamp = typedRow.timestamp;
+        startTimestamp = DateTime.fromJSDate(typedRow.timestamp!);
         index = 1;
         if (typedRow.position) {
           home = typedRow.position;
@@ -91,16 +88,17 @@ export class OpenTxLogParser {
         typedRow.distanceToHome = Math.round(Distance(home.lat, home.lon, typedRow.position.lat, typedRow.position.lon) * 1000);
       }
 
-      typedRow.timecode = typedRow.timestamp.diff(startTimestamp!).as('seconds');
+      typedRow.timecode = DateTime.fromJSDate(typedRow.timestamp!).diff(startTimestamp!).as('seconds');
 
       currentLog!.rows.push(typedRow);
       prevRow = typedRow;
     }
 
     if (currentLog && prevRow) {
-      currentLog.duration = prevRow.timestamp!.diff(startTimestamp!);
+      currentLog.duration = DateTime.fromJSDate(prevRow.timestamp!).diff(startTimestamp!).toISOTime();
       currentLog.calculate();
     }
+    progress(lines.length, lines.length);
     return logs;
   }
 
@@ -188,8 +186,8 @@ function getSeparatorChars() {
 }
 
 export interface ILog {
-  timestamp?: DateTime;
-  duration?: Duration;
+  timestamp?: Date;
+  duration?: string;
   rows: ILogRow[];
   isSelected?: boolean;
   srtFileName?: string;
@@ -299,8 +297,8 @@ export class Log implements ILog {
     return (this.rows[this.rows.length - 1].capacity ?? 0) - (this.rows[0].capacity ?? 0);
   }
 
-  timestamp?: DateTime;
-  duration?: Duration;
+  timestamp?: Date;
+  duration?: string;
   rows: LogRow[];
   isSelected?: boolean;
   srtFileName?: string;
@@ -319,14 +317,14 @@ export interface ILogRow {
   estimatedFlightTime?: number;
   index: number;
   timecode?: number;
-  timestamp?: DateTime;
+  timestamp?: Date;
   lat?: number;
   lon?: number;
   position?: LatLon;
   distanceToHome?: number;
   distanceTraveled?: number;
-  Date?: DateTime
-  Time?: Duration
+  Date?: string
+  Time?: string;
   rss1?: number;
   rss2?: number;
   rqly?: number;
@@ -405,14 +403,14 @@ export class LogRow implements ILogRow {
   estimatedFlightTime?: number;
   index: number;
   timecode?: number;
-  timestamp?: DateTime;
+  timestamp?: Date;
   lat?: number;
   lon?: number;
   position?: LatLon;
   distanceToHome?: number;
   distanceTraveled?: number;
-  Date?: DateTime
-  Time?: Duration
+  Date?: string;
+  Time?: string;
   rss1?: number;
   rss2?: number;
   rqly?: number;

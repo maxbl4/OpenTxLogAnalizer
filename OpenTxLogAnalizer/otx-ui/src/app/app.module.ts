@@ -6,8 +6,13 @@ import {AgGridModule} from "ag-grid-angular";
 import {FormsModule} from "@angular/forms";
 import {HttpClientModule} from "@angular/common/http";
 import {NgxFileDropModule} from "ngx-file-drop";
-import {OpenTxLogParser} from "../services/open-tx-log-parser";
-import {NgbDropdownModule, NgbModalModule, NgbNavModule, NgbTooltipModule} from "@ng-bootstrap/ng-bootstrap";
+import {
+  NgbDropdownModule,
+  NgbModalModule,
+  NgbNavModule,
+  NgbProgressbarModule,
+  NgbTooltipModule
+} from "@ng-bootstrap/ng-bootstrap";
 import {NgxChartsModule} from "@swimlane/ngx-charts";
 import {BrowserAnimationsModule} from "@angular/platform-browser/animations";
 import {DataManager} from "../services/data-manager";
@@ -43,10 +48,11 @@ import { LogBoundsControlComponent } from './log-bounds-control/log-bounds-contr
     NgbNavModule,
     NgbTooltipModule,
     NgbModalModule,
+    NgbProgressbarModule,
     NgxChartsModule,
     BrowserAnimationsModule,
   ],
-  providers: [OpenTxLogParser, DataManager, SrtParser, SrtGenerator, PersistenceService],
+  providers: [DataManager, SrtParser, SrtGenerator, PersistenceService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

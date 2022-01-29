@@ -1,4 +1,4 @@
-﻿import {ILog, ILogRow, Log, LogRow, OpenTxLogParser} from "./open-tx-log-parser";
+﻿import {Log, LogRow, OpenTxLogParser} from "./open-tx-log-parser";
 import {SrtParser} from "./srt-parser";
 import {EventEmitter, Injectable} from "@angular/core";
 import {PersistenceService} from "./persistence.service";
@@ -6,6 +6,7 @@ import {demoProject} from "./demo-log";
 
 @Injectable()
 export class DataManager {
+  worker!: Worker;
   currentLogProject?: LogProject;
   selectedOtxIndex: number = -1;
 
@@ -13,9 +14,36 @@ export class DataManager {
   srtLog?: Log;
   selectedLog?: Log;
   selectedLogChange = new EventEmitter<Log>();
+  otxParser: OpenTxLogParser;
+  operation?: string;
+  progress?: number;
 
 
-  constructor(public otxParser: OpenTxLogParser, public srtParser: SrtParser, private persistance: PersistenceService) {
+  constructor(public srtParser: SrtParser, private persistance: PersistenceService) {
+    this.otxParser = new OpenTxLogParser();
+  }
+
+  initWorker(worker: Worker){
+    this.worker = worker;
+    worker.onmessage = ({ data }) => {
+      switch (data.command) {
+        case "set-otx-logs":
+          this.otxLogs = data.otxLogs;
+          if (this.otxLogs.length == 1) {
+            this.updateSelectedLog(0);
+          }else this.updateSelectedLog(-1);
+          break;
+        case "operation-progress":
+          console.log(data);
+          this.operation = data.operation;
+          this.progress = data.progress;
+          break;
+        case "operation-done":
+          this.operation = undefined;
+          this.progress = 0;
+          break;
+      }
+    };
   }
 
   loadDemoProject(){
@@ -32,7 +60,6 @@ export class DataManager {
         this.otxLogs = [];
         this.srtLog = undefined;
         this.currentLogProject = {otx: {type: "otx", name: file.name, content: text}, selectedOtxIndex: -1, correction: 1, powerAvailable: 0, startRow: 0, endRow: 0};
-        //this.persistance.logProject = this.currentLogProject;
         this.loadOtxLog();
       });
     }else alert('Only CSV files are supported');
@@ -40,12 +67,7 @@ export class DataManager {
 
   private loadOtxLog() {
     if (!this.currentLogProject) return;
-    this.otxLogs = this.otxParser.parse(this.currentLogProject.otx.content);
-    for (let l of this.otxLogs)
-      l.calculate();
-    if (this.otxLogs.length == 1) {
-      this.updateSelectedLog(0);
-    }else this.updateSelectedLog(-1);
+    this.worker.postMessage({command: 'parse-otx', content: this.currentLogProject.otx.content});
   }
 
   attachDjiSrtLog(file: FileSystemFileEntry) {

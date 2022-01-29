@@ -16,6 +16,15 @@ import {PersistenceService} from "../services/persistence.service";
     </div>
     <!-- Usage -->
     <otx-usage-text-view #usageInfo></otx-usage-text-view>
+    <div *ngIf="data.operation" class="modal fade show modal-dialog-centered">
+      <div class="modal-dialog w-100">
+        <div class="modal-content">
+          <div class="modal-body">
+            <ngb-progressbar type="success" [value]="data.progress??0" [max]="100" [striped]="true">{{data.operation}}</ngb-progressbar>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- Drop zone -->
     <div class="row gx-0">
       <div class="col align-self-center">
@@ -99,6 +108,7 @@ import {PersistenceService} from "../services/persistence.service";
 
       <div #tabPane [ngbNavOutlet]="nav" class="mt-2 flex-container flex-grow-1"></div>
     </div>
+    <div *ngIf="data.operation" class="modal-backdrop show fade"></div>
   `,
   styles: [`
     :host {
@@ -109,8 +119,8 @@ import {PersistenceService} from "../services/persistence.service";
     }
   `]
 })
-export class AppComponent implements OnInit{
-  @ViewChild('tabPane', { read: ElementRef })
+export class AppComponent implements OnInit {
+  @ViewChild('tabPane', {read: ElementRef})
   tabPane?: ElementRef;
   private api: GridApi | undefined;
   gridOptions: GridOptions = {
@@ -155,6 +165,7 @@ export class AppComponent implements OnInit{
 
   constructor(public data: DataManager, public persistence: PersistenceService) {
     this.selectedTabPane = persistence.selectedTabPane ?? 1;
+    data.initWorker(new Worker(new URL('./app.worker', import.meta.url)));
   }
 
   ngOnInit(): void {
