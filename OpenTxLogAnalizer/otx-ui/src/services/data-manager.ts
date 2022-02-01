@@ -1,5 +1,4 @@
-﻿import {Log, LogRow, OpenTxLogParser} from "./open-tx-log-parser";
-import {SrtParser} from "./srt-parser";
+﻿import {Log} from "./open-tx-log-parser";
 import {EventEmitter, Injectable} from "@angular/core";
 import {PersistenceService} from "./persistence.service";
 import {demoProject} from "./demo-log";
@@ -13,14 +12,11 @@ export class DataManager {
   otxLogs: Log[] = [];
   srtLog?: Log;
   selectedLog?: Log;
-  selectedLogChange = new EventEmitter<Log>();
-  otxParser: OpenTxLogParser;
+  selectedLogChange = new EventEmitter<Log|undefined>();
   operation?: string;
   progress?: number;
 
-
-  constructor(public srtParser: SrtParser, private persistance: PersistenceService) {
-    this.otxParser = new OpenTxLogParser();
+  constructor(private persistance: PersistenceService) {
   }
 
   initWorker(worker: Worker){
@@ -34,13 +30,16 @@ export class DataManager {
           }else this.updateSelectedLog(-1);
           break;
         case "operation-progress":
-          console.log(data);
           this.operation = data.operation;
           this.progress = data.progress;
           break;
         case "operation-done":
           this.operation = undefined;
           this.progress = 0;
+          break;
+        case "set-selected-log":
+          this.selectedLog = data.selectedLog;
+          this.selectedLogChange.next(this.selectedLog);
           break;
       }
     };
@@ -67,7 +66,7 @@ export class DataManager {
 
   private loadOtxLog() {
     if (!this.currentLogProject) return;
-    this.worker.postMessage({command: 'parse-otx', content: this.currentLogProject.otx.content});
+    this.worker.postMessage({command: 'parse-otx', content: this.currentLogProject.otx.content, data: this});
   }
 
   attachDjiSrtLog(file: FileSystemFileEntry) {
@@ -78,45 +77,17 @@ export class DataManager {
         const text = await f.text();
         p.srt = {type: "srt", name: file.name, content: text};
         this.loadSrtLog();
-        this.updateSelectedLog();
       });
     }else alert('Only SRT files are supported');
   }
 
   loadSrtLog() {
     if (!this.currentLogProject || !this.currentLogProject.srt) return;
-    this.srtLog = this.srtParser.parse(this.currentLogProject.srt.content);
-    for (let l of this.otxLogs) {
-      l.joinSrtLog(this.srtLog);
-    }
+    this.worker.postMessage({command: 'load-srt-log', content: this.currentLogProject.srt.content, data: this});
   }
 
   public updateSelectedLog(index?: number) {
-    if (!this.currentLogProject) return;
-    if (index === undefined) index = this.selectedOtxIndex;
-    this.selectedOtxIndex = index;
-    if (index < 0) {
-      this.selectedLog = undefined;
-      return;
-    }
-    const l = this.otxLogs[this.selectedOtxIndex];
-    if (this.currentLogProject.selectedOtxIndex != this.selectedOtxIndex) {
-      this.currentLogProject.startRow = 0;
-      this.currentLogProject.endRow = l.rows.length;
-      this.currentLogProject.selectedOtxIndex = this.selectedOtxIndex;
-    }else {
-      if (this.currentLogProject.startRow < 0) this.currentLogProject.startRow = 0;
-      if (this.currentLogProject.endRow > l.rows.length) this.currentLogProject.endRow = l.rows.length;
-      if (this.currentLogProject.startRow > this.currentLogProject.endRow)
-        this.currentLogProject.startRow = this.currentLogProject.endRow;
-    }
-
-    this.selectedLog = new Log(l);
-    this.selectedLog.correction = this.currentLogProject.correction;
-    this.selectedLog.powerAvailable = this.currentLogProject.powerAvailable;
-    this.selectedLog.rows = l.rows.slice(this.currentLogProject.startRow, this.currentLogProject.endRow).map(x => new LogRow(x));
-    this.selectedLog.applyCorrection();
-    this.selectedLogChange.next(this.selectedLog);
+    this.worker.postMessage({command: 'update-selected-log', data: this});
   }
 }
 

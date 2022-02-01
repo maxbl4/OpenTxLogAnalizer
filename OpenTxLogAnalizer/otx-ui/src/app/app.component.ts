@@ -1,7 +1,7 @@
 import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import {GridApi, GridOptions} from "ag-grid-community";
 import {NgxFileDropEntry} from "ngx-file-drop";
-import {ILog} from "../services/open-tx-log-parser";
+import {exportToCsv, ILog} from "../services/open-tx-log-parser";
 import {DateTime} from "luxon";
 import {DataManager} from "../services/data-manager";
 import {PersistenceService} from "../services/persistence.service";
@@ -185,7 +185,7 @@ export class AppComponent implements OnInit {
 
   exportCsv(selectedLog: ILog) {
     const a = document.createElement('a');
-    const objectUrl = URL.createObjectURL(new Blob([this.data.otxParser.exportToCsv(selectedLog)]));
+    const objectUrl = URL.createObjectURL(new Blob([exportToCsv(selectedLog)]));
     a.href = objectUrl;
     a.download = `${this.data.currentLogProject?.otx.name.substring(0, this.data.currentLogProject?.otx.name.length - 4)}-enriched.csv`;
     a.click();

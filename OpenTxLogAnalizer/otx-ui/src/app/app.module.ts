@@ -16,7 +16,6 @@ import {
 import {NgxChartsModule} from "@swimlane/ngx-charts";
 import {BrowserAnimationsModule} from "@angular/platform-browser/animations";
 import {DataManager} from "../services/data-manager";
-import {SrtParser} from "../services/srt-parser";
 import {SrtGenerator} from "../services/srt-generator";
 import { StatisticsViewComponent } from './statistics-view/statistics-view.component';
 import { ChartsViewComponent } from './charts-view/charts-view.component';
@@ -52,7 +51,7 @@ import { LogBoundsControlComponent } from './log-bounds-control/log-bounds-contr
     NgxChartsModule,
     BrowserAnimationsModule,
   ],
-  providers: [DataManager, SrtParser, SrtGenerator, PersistenceService],
+  providers: [DataManager, SrtGenerator, PersistenceService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

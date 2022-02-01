@@ -1,13 +1,12 @@
 ﻿import {ILogRow, Log} from "./open-tx-log-parser";
-import {Injectable} from "@angular/core";
 import {Duration} from "luxon";
 import * as _ from "underscore";
 
-@Injectable()
 export class SrtParser {
-  parse(text: string): Log {
+  parse(text: string, progress:(v:number, max:number) => void): Log {
     const lines = text.split("\n");
     const rows = [];
+    const max = lines.length / 4;
     let i = 0;
     while (i < lines.length) {
       if (!lines[i * 4])
@@ -37,7 +36,7 @@ export class SrtParser {
             break;
         }
       }
-
+      progress(i, max);
       i++;
     }
     return new Log({rows:rows, duration: _.last(rows)?.Time, capacityUsed: 0, powerUsed: 0, powerAvailable: 0, correction: 1});

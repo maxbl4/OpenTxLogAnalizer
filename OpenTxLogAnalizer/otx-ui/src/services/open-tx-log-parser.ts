@@ -102,23 +102,23 @@ export class OpenTxLogParser {
     return logs;
   }
 
-  exportToCsv(log:ILog): string {
-    const s = getSeparatorChars();
-    let csv = csvFieldMap.map(x => x.title).join(s.csv) + "\n";
-    for (let r of log.rows) {
-      let row = "";
-      for (let f of csvFieldMap) {
-        const value = ((<any>r)[f.field] ?? "").toString().replace(".", s.decimal);
-        row += value + s.csv;
-      }
-      csv += row + "\n";
-    }
-    return csv;
-  }
-
   readHeader(header: string): string[] {
     return header.split(",").map(x => x.trim());
   }
+}
+
+export function exportToCsv(log:ILog): string {
+  const s = getSeparatorChars();
+  let csv = csvFieldMap.map(x => x.title).join(s.csv) + "\n";
+  for (let r of log.rows) {
+    let row = "";
+    for (let f of csvFieldMap) {
+      const value = ((<any>r)[f.field] ?? "").toString().replace(".", s.decimal);
+      row += value + s.csv;
+    }
+    csv += row + "\n";
+  }
+  return csv;
 }
 
 const csvFieldMap = [
