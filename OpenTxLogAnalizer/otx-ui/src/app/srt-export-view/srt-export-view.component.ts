@@ -2,6 +2,7 @@ import {Component, Input, OnInit} from '@angular/core';
 import {OsdItems, SrtGenerator} from "../../services/srt-generator";
 import {PersistenceService} from "../../services/persistence.service";
 import {DataManager} from "../../services/data-manager";
+import {AssGenerator} from "../../services/ass-generator.service";
 
 @Component({
   selector: 'otx-srt-export-view',
@@ -75,7 +76,7 @@ export class SrtExportViewComponent implements OnInit {
     power: true,
   };
 
-  constructor(public data: DataManager, private srtGenerator: SrtGenerator, private persistance: PersistenceService) { }
+  constructor(public data: DataManager, private srtGenerator: SrtGenerator, private assGenerator: AssGenerator, private persistance: PersistenceService) { }
 
   ngOnInit(): void {
     this.osdItems = this.persistance.srtExport_osdItems ?? this.osdItems;
@@ -86,9 +87,9 @@ export class SrtExportViewComponent implements OnInit {
     const fileName = this.data.currentLogProject.otx.name;
     this.persistance.srtExport_osdItems = this.osdItems;
     const a = document.createElement('a');
-    const objectUrl = URL.createObjectURL(new Blob([this.srtGenerator.exportSrt(this.data.selectedLog!, this.osdItems)]));
+    const objectUrl = URL.createObjectURL(new Blob([this.assGenerator.exportAss(this.data.selectedLog!, this.osdItems)]));
     a.href = objectUrl;
-    a.download = `${fileName.substring(0, fileName.length - 4)}.srt`;
+    a.download = `${fileName.substring(0, fileName.length - 4)}.ass`;
     a.click();
     URL.revokeObjectURL(objectUrl);
   }

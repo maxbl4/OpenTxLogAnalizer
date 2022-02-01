@@ -21,6 +21,7 @@ import { SrtExportViewComponent } from './srt-export-view/srt-export-view.compon
 import {PersistenceService} from "../services/persistence.service";
 import { MapViewComponent } from './map-view/map-view.component';
 import { LogBoundsControlComponent } from './log-bounds-control/log-bounds-control.component';
+import {AssGenerator} from "../services/ass-generator.service";
 
 @NgModule({
   declarations: [
@@ -46,7 +47,7 @@ import { LogBoundsControlComponent } from './log-bounds-control/log-bounds-contr
     NgxChartsModule,
     BrowserAnimationsModule,
   ],
-  providers: [OpenTxLogParser, DataManager, SrtParser, SrtGenerator, PersistenceService],
+  providers: [OpenTxLogParser, DataManager, SrtParser, SrtGenerator, AssGenerator, PersistenceService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
