@@ -8,6 +8,7 @@ const osdHeaderRegex = /^#!.+?\n/gm;
 export class AssGenerator {
   exportAss(log: ILog, osdLayout: string): string {
     const settings = this.getLayoutSettings(osdLayout);
+    const color = reverseColor(settings.color);
     let srt = `[Script Info]
 ScriptType: v4.00
 PlayResX: ${settings.width}
@@ -15,7 +16,7 @@ PlayResY: ${settings.height}
 
 [V4 Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, TertiaryColour, BackColour, Bold, Italic, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, AlphaLevel, Encoding
-Style: OSD, ${settings.font},${settings.fontSize},&H00${settings.color},&H00${settings.color},&H00${settings.color},-2147483640,-1,0,1,1,2,1,30,30,30,0,0
+Style: OSD, ${settings.font},${settings.fontSize},&H00${color},&H00${color},&H00${color},-2147483640,-1,0,1,1,2,1,30,30,30,0,0
 
 [Events]
 Format: Marked, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -96,7 +97,12 @@ function pad(s?: any, n?: number) {
   return s;
 }
 
-interface ILayoutSettings {
+function reverseColor(rgb:string) {
+  if (rgb.length != 6) return rgb;
+  return rgb.substring(4,6) + rgb.substring(2,4) + rgb.substring(0,2);
+}
+
+export interface ILayoutSettings {
   x: number;
   y: number;
   width: number;
@@ -106,7 +112,7 @@ interface ILayoutSettings {
   color: string;
 }
 
-class LayoutSettings implements ILayoutSettings {
+export class LayoutSettings implements ILayoutSettings {
   x: number = 10;
   y: number = 600;
   width: number = 960;

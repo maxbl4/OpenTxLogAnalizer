@@ -44,7 +44,8 @@ div.tab-pane {
   grid-row: 1;
 }
 
-textarea.osd-layout {
-  font-family: Consolas;
-  width: 700px;
+div.osd-preview {
+  display:flex;
+  background-image: url('assets/osd-preview-bg.jpg');
+  text-shadow: 3px 3px 5px #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
 }

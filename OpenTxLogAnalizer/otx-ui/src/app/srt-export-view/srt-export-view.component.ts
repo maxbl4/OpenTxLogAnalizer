@@ -2,7 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import {OsdItems, SrtGenerator} from "../../services/srt-generator";
 import {PersistenceService} from "../../services/persistence.service";
 import {DataManager} from "../../services/data-manager";
-import {AssGenerator} from "../../services/ass-generator.service";
+import {AssGenerator, LayoutSettings} from "../../services/ass-generator.service";
 import {ILog} from "../../services/open-tx-log-parser";
 
 @Component({
@@ -20,7 +20,18 @@ import {ILog} from "../../services/open-tx-log-parser";
         <div class="col">
           <div class="mb-3">
               <label for="exampleFormControlTextarea1" class="form-label">OSD Preview</label>
-              <textarea class="form-control osd-layout" id="exampleFormControlTextarea1" rows="15" [ngModel]="osdLayoutPreview" readonly></textarea>
+            <div class="osd-preview"
+                 [style.font-family]="layoutSettings.font" [style.font-size]="layoutSettings.fontSize+'px'"
+                 [style.color]="'#'+layoutSettings.color"
+                 [style.width]="layoutSettings.width+'px'"
+                 [style.height]="layoutSettings.height+'px'"
+                 [style.padding-left]="layoutSettings.x+'px'"
+                 [style.padding-bottom]="layoutSettings.height-layoutSettings.y+'px'">
+                <pre style="align-self: flex-end">{{osdLayoutPreview}}</pre>
+            </div>
+
+<!--              <textarea class="form-control osd-layout" id="exampleFormControlTextarea1" rows="15" [ngModel]="osdLayoutPreview" readonly-->
+<!--                ></textarea>-->
           </div>
         </div>
         <div class="col-auto">
@@ -66,6 +77,7 @@ export class SrtExportViewComponent implements OnInit {
 |Ele|{rxBattery,9}V | {current,9}A | {power,6}W |{wattPerKm,6}Wh/km |
 |R/C|{rqly,10} |{rss1,8}dBm |{rsnr,5}SNR |            |
 `;
+  layoutSettings = new LayoutSettings();
 
   constructor(public data: DataManager, private srtGenerator: SrtGenerator, private assGenerator: AssGenerator, private persistance: PersistenceService) { }
 
@@ -92,6 +104,7 @@ export class SrtExportViewComponent implements OnInit {
   }
 
   updatePreview() {
+    this.layoutSettings = this.assGenerator.getLayoutSettings(this.osdLayout);
     this.osdLayoutPreview = this.assGenerator.getPreview(this.osdLayout, this.data.selectedLog!);
     this.persistance.srtExport_osdLayout = this.osdLayout;
   }
