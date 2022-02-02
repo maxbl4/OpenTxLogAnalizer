@@ -19,6 +19,7 @@
   rss1: IStatTriple;
   rss2: IStatTriple;
   rqly: IStatTriple;
+  rsnr: IStatTriple;
   tpwr: IStatTriple;
   djiDelay: IStatTriple;
   djiBitrate: IStatTriple;
@@ -44,6 +45,7 @@ export class Stats implements IStats {
   estimatedRange: IStatTriple = new StatTriple();
   power: IStatTriple = new StatTriple();
   rqly: IStatTriple = new StatTriple();
+  rsnr: IStatTriple = new StatTriple();
   rss1: IStatTriple = new StatTriple();
   rss2: IStatTriple = new StatTriple();
   tpwr: IStatTriple = new StatTriple();

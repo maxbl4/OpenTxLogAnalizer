@@ -31,9 +31,9 @@ export class OpenTxLogParser {
       typedRow.timestamp = typedRow.Date.plus(typedRow.Time);
       typedRow.rss1 = parseInt(row["1RSS(dB)"]);
       typedRow.rss2 = parseInt(row["2RSS(dB)"]);
-      typedRow.rqly = parseInt(row["RQly(%)"]);
       typedRow.rsnr = parseInt(row["RSNR(dB)"]);
       typedRow.rfmd = parseInt(row["RFMD"]);
+      typedRow.rqly = parseInt(row["RQly(%)"]) - 1 + 100 * typedRow.rfmd;
       typedRow.trss = parseInt(row["TRSS(dB)"]);
       typedRow.tqly = parseInt(row["TQly(%)"]);
       typedRow.tsnr = parseInt(row["TSNR(dB)"]);
@@ -52,6 +52,7 @@ export class OpenTxLogParser {
       typedRow.elevator = Math.round((parseFloat(row["Ele"]) + 1024) * 100 / 2048);
       typedRow.sats = parseInt(row["Sats"]);
       typedRow.altitude = Math.round(parseFloat(row["Alt(m)"])*10)/10;
+      typedRow.gps = row["GPS"];
       typedRow.gpsSpeed = Math.round(parseFloat(row["GSpd(kmh)"])*10)/10;
       typedRow.distanceTraveled = 0;
       const coords = row["GPS"] as string;

@@ -1,19 +1,21 @@
 import {Injectable} from "@angular/core";
-import {ILog} from "./open-tx-log-parser";
+import {ILog, Log} from "./open-tx-log-parser";
 import {Duration} from "luxon";
-import {OsdItems} from "./srt-generator";
+
+const osdHeaderRegex = /^#!.+?\n/gm;
 
 @Injectable()
 export class AssGenerator {
-  exportAss(log: ILog, osdItems: OsdItems): string {
+  exportAss(log: ILog, osdLayout: string): string {
+    const settings = this.getLayoutSettings(osdLayout);
     let srt = `[Script Info]
 ScriptType: v4.00
-PlayResY: 960
-PlayResY: 720
+PlayResX: ${settings.width}
+PlayResY: ${settings.height}
 
 [V4 Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, TertiaryColour, BackColour, Bold, Italic, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, AlphaLevel, Encoding
-Style: OSD, Consolas,28,&H00FFFFFF,&H00FFFFFF,&H00FFFFFF,-2147483640,-1,0,1,1,2,1,30,30,30,0,0
+Style: OSD, ${settings.font},${settings.fontSize},&H00${settings.color},&H00${settings.color},&H00${settings.color},-2147483640,-1,0,1,1,2,1,30,30,30,0,0
 
 [Events]
 Format: Marked, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -22,21 +24,59 @@ Format: Marked, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     for (let i = 0; i < log.rows.length; i++) {
       const r = log.rows[i];
       const timecode = Duration.fromMillis((r.timecode ?? 0) * 1000);
-      let frame = `Dialogue: Marked=0,${formatTime(prevTimecode)},${formatTime(timecode)},OSD,NTP,0,0,0,,{\\pos(10,720)}`;
-      if (osdItems.gps) frame += `${(<any>r)["GPS"]}\\N`;
-      if (osdItems.dist) frame += `Home ${pad(r.distanceToHome, 5)}m Trip ${pad(r.distanceTraveled, 5)}m\\N`;
-      if (osdItems.altitude) frame += `Alt ${pad(r.altitude, 4)}m `;
-      if (osdItems.gpsSpeed) frame += `${pad(r.gpsSpeed, 5)}km/h\\N`; else if (osdItems.altitude) frame += "\\N";
-      if (osdItems.rss1) frame += `${pad(r.rss1, 4)}dbm ${r.rfmd}:${pad(r.rqly,3)}\\N`;
-      if (osdItems.dji && (r.djiDelay || r.djiBitrate)) frame += `DJI ${r.djiDelay}ms ${pad(r.djiBitrate, 4)}mBit\\N`;
-      if (osdItems.battery) frame += `${r.rxBattery}v ${r.capacity}mAh\\N`;
-      if (osdItems.power) frame += `${r.power}w ${r.current}a ${r.wattPerKm}wh/km\\N`;
-      frame += "\n";
-      srt += frame;
-
+      let frame = `Dialogue: Marked=0,${formatTime(prevTimecode)},${formatTime(timecode)},OSD,NTP,0,0,0,,{\\pos(${settings.x},${settings.y})}`;
+      frame += this.getOsd(osdLayout, r).replace(/\n/g, "\\N");
+      srt += frame + "\n";
       prevTimecode = timecode;
     }
     return srt;
+  }
+
+  getLayoutSettings(osdLayout: string): ILayoutSettings {
+    const settings = new LayoutSettings();
+    const header = osdLayout.match(osdHeaderRegex);
+    if (!header) return settings;
+    const keys = Object.keys(settings);
+    const stringKeys:(keyof ILayoutSettings)[] = ["color", "font"];
+    const fields = header[0].substring(2, header[0].length - 1).split(",");
+    for (let f of fields) {
+      const fv = f.split(":");
+      const fieldName = <keyof ILayoutSettings>fv[0].trim();
+      if (keys.findIndex(x => x == fieldName) >= 0) {
+        if (stringKeys.findIndex(x => x == fieldName) < 0) {
+          const v = parseInt(fv[1]);
+          if (!isNaN(v))
+            (<any>settings[fieldName]) = v;
+        }else
+          (<any>settings[fieldName]) = fv[1];
+      }
+    }
+    return settings;
+  }
+
+  getOsd(osdLayout: string, row: any) {
+    let osd = "";
+    const header = osdLayout.match(osdHeaderRegex);
+    if (header)
+      osdLayout = osdLayout.substring(header[0].length);
+    const matches = osdLayout.matchAll(/\{(\w+),?(\d+)?\}/gm);
+    let prevIndex = 0;
+    for (let m of matches) {
+      const field = m[1];
+      const padding = parseInt(m[2] ?? "0");
+      const value = pad(row[field], padding);
+      osd += osdLayout.substring(prevIndex, m.index) + value;
+      prevIndex = m.index! + m[0].length;
+    }
+    if (prevIndex < osdLayout.length) osd += osdLayout.substring(prevIndex, osdLayout.length);
+    return osd;
+  }
+
+  getPreview(osdLayout: string, log: Log) {
+    this.getLayoutSettings(osdLayout);
+    const sampleRowIndex = Math.floor(log.rows.length / 2);
+    const row = <any>log.rows[sampleRowIndex];
+    return this.getOsd(osdLayout, row);
   }
 }
 
@@ -54,4 +94,24 @@ function pad(s?: any, n?: number) {
   if (n > s.length)
     return " ".repeat(n - s.length) + s;
   return s;
+}
+
+interface ILayoutSettings {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  font: string;
+  fontSize: number;
+  color: string;
+}
+
+class LayoutSettings implements ILayoutSettings {
+  x: number = 10;
+  y: number = 600;
+  width: number = 960;
+  height: number = 720;
+  font: string = "Consolas";
+  fontSize: number = 28;
+  color: string = "FFFFFF";
 }

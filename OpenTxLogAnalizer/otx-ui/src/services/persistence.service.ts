@@ -13,6 +13,14 @@ export class PersistenceService {
     this.save("srtExport_osdItems", v);
   }
 
+  get srtExport_osdLayout(): string|undefined {
+    return this.load("srtExport_osdLayout");
+  }
+
+  set srtExport_osdLayout(v: string|undefined) {
+    this.save("srtExport_osdLayout", v);
+  }
+
   get mapViewPreferences(): MapViewPreferences|undefined {
     return this.load("mapViewPreferences");
   }

@@ -52,19 +52,7 @@ import {PersistenceService} from "../services/persistence.service";
         <li [ngbNavItem]="1">
           <a ngbNavLink>Export Results</a>
           <ng-template ngbNavContent>
-            <div class="container">
-              <div class="row">
-                <div class="col">
-                  <otx-srt-export-view></otx-srt-export-view>
-                </div>
-                <div class="col">
-                  <h3>Export enriched log in CSV format</h3>
-                  <p>Additional data is calculated in the output: Distance to Home, Total Trip Distance, Electrical
-                    Power, Electrical Efficiency in Watt hour per km</p>
-                  <button class="btn btn-success" (click)="exportCsv(data.selectedLog)">Export CSV</button>
-                </div>
-              </div>
-            </div>
+            <otx-srt-export-view></otx-srt-export-view>
           </ng-template>
         </li>
         <li [ngbNavItem]="2">
@@ -170,14 +158,5 @@ export class AppComponent implements OnInit{
     if (files.length == 0 || !files[0].fileEntry.isFile) return;
     const file = files[0].fileEntry as FileSystemFileEntry;
     this.data.attachDjiSrtLog(file);
-  }
-
-  exportCsv(selectedLog: ILog) {
-    const a = document.createElement('a');
-    const objectUrl = URL.createObjectURL(new Blob([this.data.otxParser.exportToCsv(selectedLog)]));
-    a.href = objectUrl;
-    a.download = `${this.data.currentLogProject?.otx.name.substring(0, this.data.currentLogProject?.otx.name.length - 4)}-enriched.csv`;
-    a.click();
-    URL.revokeObjectURL(objectUrl);
   }
 }
