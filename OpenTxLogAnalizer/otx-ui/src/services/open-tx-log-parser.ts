@@ -33,7 +33,9 @@ export class OpenTxLogParser {
       typedRow.rss2 = parseInt(row["2RSS(dB)"]);
       typedRow.rsnr = parseInt(row["RSNR(dB)"]);
       typedRow.rfmd = parseInt(row["RFMD"]);
-      typedRow.rqly = parseInt(row["RQly(%)"]) - 1 + 100 * typedRow.rfmd;
+      typedRow.rqly = parseInt(row["RQly(%)"]);
+      typedRow.rqlySum = parseInt(row["RQly(%)"]) - 1 + 100 * typedRow.rfmd;
+      typedRow.rqlyOsd = `${typedRow.rfmd}:${row["RQly(%)"]}`;
       typedRow.trss = parseInt(row["TRSS(dB)"]);
       typedRow.tqly = parseInt(row["TQly(%)"]);
       typedRow.tsnr = parseInt(row["TSNR(dB)"]);
@@ -331,6 +333,8 @@ export interface ILogRow {
   rss1?: number;
   rss2?: number;
   rqly?: number;
+  rqlySum?: number;
+  rqlyOsd?: string;
   rsnr?: number;
   rfmd?: number;
   trss?: number;
@@ -417,6 +421,8 @@ export class LogRow implements ILogRow {
   rss1?: number;
   rss2?: number;
   rqly?: number;
+  rqlySum?: number;
+  rqlyOsd?: string;
   rsnr?: number;
   rfmd?: number;
   trss?: number;

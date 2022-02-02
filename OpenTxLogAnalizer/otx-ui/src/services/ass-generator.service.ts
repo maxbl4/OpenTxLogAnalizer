@@ -83,7 +83,7 @@ Format: Marked, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
 function formatTime(d: Duration) {
   let t = d.toFormat('h:mm:ss.S');
-  if (t.endsWith("00"))
+  if (t.match(/\.\d{3}$/gm))
     return t.substring(0, t.length - 1);
   return t;
 }

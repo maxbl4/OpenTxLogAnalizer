@@ -35,7 +35,7 @@ import {ILog} from "../../services/open-tx-log-parser";
           </div>
         </div>
         <div class="col-auto">
-          Available Fields: gps, lat, lon, gpsSpeed, Sats, distanceToHome, distanceTraveled, rss1, rss2, rqly, rsnr, rfmd, tpwr, rxBattery, current, power, capacity, wattPerKm, estimatedRange, estimatedFlightTime, batteryPercent, pitchDeg, rollDeg, yawDeg, throttle, djiDelay, djiBitrate
+          Available Fields: gps, lat, lon, gpsSpeed, Sats, distanceToHome, distanceTraveled, rss1, rss2, rqly, rqlySum, rqlyOsd, rsnr, rfmd, tpwr, rxBattery, current, power, capacity, wattPerKm, estimatedRange, estimatedFlightTime, batteryPercent, pitchDeg, rollDeg, yawDeg, throttle, djiDelay, djiBitrate
         </div>
       </div>
       <div class="row mb-3">
@@ -75,7 +75,7 @@ export class SrtExportViewComponent implements OnInit {
 |GPS| {lat,9} | {lat,10} | {Sats,3}Sats | {distanceToHome,6}Home |
 |DJI|{djiDelay,8}ms | {djiBitrate,6}MBit |         |            |
 |Ele|{rxBattery,9}V | {current,9}A | {power,6}W |{wattPerKm,6}Wh/km |
-|R/C|{rqly,10} |{rss1,8}dBm |{rsnr,5}SNR |            |
+|R/C|{rqlyOsd,10} |{rss1,8}dBm |{rsnr,5}SNR |            |
 `;
   layoutSettings = new LayoutSettings();
 
