@@ -135,6 +135,27 @@ import {DataManager} from "../../services/data-manager";
               </td>
               <td></td>
             </tr>
+            <tr>
+              <th colspan="4">
+                <div class="text-center">Estimations based on average speed, power and given total watt hour capacity of the battery</div>
+              </th>
+            </tr>
+            <tr>
+              <td>Range, kilometers</td>
+              <td></td>
+              <td>
+                <div>{{rangeOnBattery}}</div>
+              </td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Hover time, minutes</td>
+              <td></td>
+              <td>
+                <div>{{hoverOnBattery}}</div>
+              </td>
+              <td></td>
+            </tr>
             </tbody>
           </table>
         </div>
@@ -145,6 +166,14 @@ import {DataManager} from "../../services/data-manager";
   ]
 })
 export class StatisticsViewComponent implements OnInit {
+  get rangeOnBattery() {
+    return Math.round((this.data.selectedLog?.powerAvailable ?? 0) / (this.data.selectedLog?.stats?.wattPerKm.avg ?? 1) * 10) / 10;
+  }
+
+  get hoverOnBattery() {
+    return Math.round((this.data.selectedLog?.powerAvailable ?? 0) / (this.data.selectedLog?.stats?.power.avg ?? 1) * 60 * 10) / 10;
+  }
+
   constructor(public data: DataManager) { }
 
   ngOnInit(): void {

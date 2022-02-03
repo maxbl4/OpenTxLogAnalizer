@@ -294,7 +294,7 @@ export class Log implements ILog {
     const last = this.rows[this.rows.length - 1];
     const totalCapacity = (last.capacity ?? 0) - (this.rows[0].capacity ?? 0);
     const numberOfCells = Math.ceil((this.rows[0].rxBattery ?? 0) / 4.2);
-    return numberOfCells * 3.7 * totalCapacity / 1000;
+    return Math.round(numberOfCells * 3.7 * totalCapacity / 100) / 10;
   }
 
   private getCapacityUsed() {
