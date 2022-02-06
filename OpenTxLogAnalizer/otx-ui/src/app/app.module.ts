@@ -22,6 +22,7 @@ import {PersistenceService} from "../services/persistence.service";
 import { MapViewComponent } from './map-view/map-view.component';
 import { LogBoundsControlComponent } from './log-bounds-control/log-bounds-control.component';
 import {AssGenerator} from "../services/ass-generator.service";
+import {GpxGenerator} from "../services/gpx-generator";
 
 @NgModule({
   declarations: [
@@ -47,7 +48,7 @@ import {AssGenerator} from "../services/ass-generator.service";
     NgxChartsModule,
     BrowserAnimationsModule,
   ],
-  providers: [OpenTxLogParser, DataManager, SrtParser, SrtGenerator, AssGenerator, PersistenceService],
+  providers: [OpenTxLogParser, DataManager, SrtParser, SrtGenerator, AssGenerator, PersistenceService, GpxGenerator],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

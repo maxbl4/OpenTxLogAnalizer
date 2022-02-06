@@ -4,12 +4,21 @@ import {PersistenceService} from "../../services/persistence.service";
 import {DataManager} from "../../services/data-manager";
 import {AssGenerator, LayoutSettings} from "../../services/ass-generator.service";
 import {ILog} from "../../services/open-tx-log-parser";
+import {GpxGenerator} from "../../services/gpx-generator";
 
 @Component({
   selector: 'otx-srt-export-view',
   template: `
     <div class="container-fluid">
       <h3>Export subtitles file with OSD telemetry</h3>
+      <div class="row mb-3">
+        <div class="col">
+          <button class="btn btn-success" (click)="exportSrt()" [disabled]="!data.selectedLog">Export SRT with OSD values</button>
+          <p>After export you can use ffmpeg to burn subtitles into your video</p>
+          <input class="form-control" type="text" readonly (click)="selectAll($event)"
+                 value="ffmpeg -i original_video.mp4 -vf subtitles=generated_subtitles.ass result_video.mp4">
+        </div>
+      </div>
       <div class="row">
         <div class="col">
           <div class="mb-3">
@@ -29,21 +38,10 @@ import {ILog} from "../../services/open-tx-log-parser";
                  [style.padding-bottom]="layoutSettings.height-layoutSettings.y+'px'">
                 <pre style="align-self: flex-end">{{osdLayoutPreview}}</pre>
             </div>
-
-<!--              <textarea class="form-control osd-layout" id="exampleFormControlTextarea1" rows="15" [ngModel]="osdLayoutPreview" readonly-->
-<!--                ></textarea>-->
           </div>
         </div>
         <div class="col-auto">
           Available Fields: gps, lat, lon, gpsSpeed, Sats, distanceToHome, distanceTraveled, rss1, rss2, rqly, rqlySum, rqlyOsd, rsnr, rfmd, tpwr, rxBattery, current, power, capacity, wattPerKm, estimatedRange, estimatedFlightTime, batteryPercent, pitchDeg, rollDeg, yawDeg, throttle, djiDelay, djiBitrate
-        </div>
-      </div>
-      <div class="row mb-3">
-        <div class="col">
-          <button class="btn btn-success" (click)="exportSrt()" [disabled]="!data.selectedLog">Export SRT with OSD values</button>
-          <p>After export you can use ffmpeg to burn subtitles into your video</p>
-          <input class="form-control" type="text" readonly (click)="selectAll($event)"
-                 value="ffmpeg -i original_video.mp4 -vf subtitles=generated_subtitles.ass result_video.mp4">
         </div>
       </div>
       <div class="row">
@@ -51,7 +49,13 @@ import {ILog} from "../../services/open-tx-log-parser";
           <h3>Export enriched log in CSV format</h3>
           <p>Additional data is calculated in the output: Distance to Home, Total Trip Distance, Electrical
             Power, Electrical Efficiency in Watt hour per km</p>
-          <button class="btn btn-success" (click)="exportCsv(data.selectedLog!)">Export CSV</button>
+          <button class="btn btn-success" (click)="exportCsv()">Export CSV</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <h3>Export track in GPX format</h3>
+          <button class="btn btn-success" (click)="exportGpx()">Export GPX</button>
         </div>
       </div>
     </div>
@@ -79,7 +83,7 @@ export class SrtExportViewComponent implements OnInit {
 `;
   layoutSettings = new LayoutSettings();
 
-  constructor(public data: DataManager, private srtGenerator: SrtGenerator, private assGenerator: AssGenerator, private persistance: PersistenceService) { }
+  constructor(public data: DataManager, private srtGenerator: SrtGenerator, private assGenerator: AssGenerator, private gpxGenerator: GpxGenerator, private persistance: PersistenceService) { }
 
   ngOnInit(): void {
     this.osdItems = this.persistance.srtExport_osdItems ?? this.osdItems;
@@ -109,11 +113,20 @@ export class SrtExportViewComponent implements OnInit {
     this.persistance.srtExport_osdLayout = this.osdLayout;
   }
 
-  exportCsv(selectedLog: ILog) {
+  exportCsv() {
     const a = document.createElement('a');
-    const objectUrl = URL.createObjectURL(new Blob([this.data.otxParser.exportToCsv(selectedLog)]));
+    const objectUrl = URL.createObjectURL(new Blob([this.data.otxParser.exportToCsv(this.data.selectedLog!)]));
     a.href = objectUrl;
     a.download = `${this.data.currentLogProject?.otx.name.substring(0, this.data.currentLogProject?.otx.name.length - 4)}-enriched.csv`;
+    a.click();
+    URL.revokeObjectURL(objectUrl);
+  }
+
+  exportGpx() {
+    const a = document.createElement('a');
+    const objectUrl = URL.createObjectURL(new Blob([this.gpxGenerator.exportGpx(this.data.selectedLog!)]));
+    a.href = objectUrl;
+    a.download = `${this.data.currentLogProject?.otx.name.substring(0, this.data.currentLogProject?.otx.name.length - 4)}.gpx`;
     a.click();
     URL.revokeObjectURL(objectUrl);
   }

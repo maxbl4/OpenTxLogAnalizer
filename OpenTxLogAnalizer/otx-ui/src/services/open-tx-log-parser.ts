@@ -201,6 +201,10 @@ export interface ILog {
   powerUsed: number;
   powerAvailable: number;
   correction: number;
+
+  trackBounds?: { minLon: number; maxLat: number; minLat: number; maxLon: number };
+  trackSize?: number;
+  center?: number[];
 }
 
 export class Log implements ILog {
@@ -216,10 +220,6 @@ export class Log implements ILog {
   calculate() {
     this.capacityUsed = this.getCapacityUsed();
     this.powerUsed = this.getPowerUsed();
-    const power = this.powerAvailable > 0 ? this.powerAvailable : this.powerUsed;
-    for (let r of this.rows) {
-      r.calculateEstimations(power);
-    }
     this.updateStatistics();
   }
 
@@ -237,9 +237,12 @@ export class Log implements ILog {
   updateStatistics() {
     if (this.rows.length == 0) return;
     this.stats = new Stats();
+    const power = this.powerAvailable > 0 ? this.powerAvailable : this.powerUsed;
+    let minLat = 1000, maxLat = -1000, minLon = 1000, maxLon = -1000;
     let initialized = false;
     for (let i = 0; i < this.rows.length; i++) {
       const r = this.rows[i];
+      r.calculateEstimations(power);
       for (let k of statKeys) {
         const currentValue = (<any>r)[k] ?? 0;
         if (!initialized) {
@@ -261,10 +264,19 @@ export class Log implements ILog {
         }
       }
       initialized = true;
+      if (r.lat! > maxLat) maxLat = r.lat!;
+      if (r.lat! < minLat) minLat = r.lat!;
+      if (r.lon! > maxLon) maxLon = r.lon!;
+      if (r.lon! < minLon) minLon = r.lon!;
     }
     for (let k of statKeys) {
       this.stats[k].avg = Math.round(this.stats[k].avg / this.rows.length * 10)/10;
     }
+    this.trackBounds = {minLat: minLat, minLon: minLon, maxLat: maxLat, maxLon: maxLon};
+    this.trackSize = Math.max(Distance(minLat, minLon, minLat, maxLon),
+        Distance(minLat, minLon, maxLat, minLon))
+      * 1000;
+    this.center = [(minLat + maxLat) / 2, (minLon + maxLon) / 2];
   }
 
   joinSrtLog(srtLog:ILog) {
@@ -312,6 +324,10 @@ export class Log implements ILog {
   powerUsed: number;
   powerAvailable: number;
   correction: number;
+
+  trackBounds: { minLon: number; maxLat: number; minLat: number; maxLon: number } = { minLon: 0, maxLat: 0, minLat: 0, maxLon: 0 };
+  trackSize: number = 0;
+  center: number[] = [];
 }
 
 

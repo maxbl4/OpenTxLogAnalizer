@@ -1,5 +1,4 @@
 import {Component, OnInit} from '@angular/core';
-import {Distance} from "gps";
 import {PersistenceService} from "../../services/persistence.service";
 import {DataManager} from "../../services/data-manager";
 import {StatTriple} from "../../services/IStats";
@@ -49,7 +48,6 @@ export class MapViewComponent implements OnInit {
   selectedStat = [this.stats[0]];
   strokeWidth = 14;
   private objectManager: any;
-  private trackCenter?: { trackBounds: { minLon: number; maxLat: number; minLat: number; maxLon: number }; center: number[]; zoom: number, trackSize: number };
 
   constructor(private persistence: PersistenceService, public data: DataManager) {
     const d = persistence.mapViewPreferences ?? {selectedStat: this.stats[0].field, strokeWidth: 14};
@@ -88,9 +86,8 @@ export class MapViewComponent implements OnInit {
         },
         options: {strokeWidth: parseInt(<any>this.strokeWidth) + 2, strokeColor: ["FFFFFF"]}
       }]};
-    this.trackCenter = this.findTrackCenter(coords);
     if (setCenter) {
-      this.myMap.setCenter(this.trackCenter.center, this.trackCenter.zoom);
+      this.myMap.setCenter(this.data.selectedLog.center, this.findZoom(this.data.selectedLog.trackSize));
     }
     this.drawMulticolorTrack(objectManagerData);
   }
@@ -215,17 +212,7 @@ export class MapViewComponent implements OnInit {
     return s;
   }
 
-  private findTrackCenter(coords: (number | undefined)[][]) {
-    let minLat = 1000, maxLat = -1000, minLon = 1000, maxLon = -1000;
-    for (let c of coords) {
-      if (c[0]! > maxLat) maxLat = c[0]!;
-      if (c[0]! < minLat) minLat = c[0]!;
-      if (c[1]! > maxLon) maxLon = c[1]!;
-      if (c[1]! < minLon) minLon = c[1]!;
-    }
-    const dist = Math.max(Distance(minLat, minLon, minLat, maxLon),
-        Distance(minLat, minLon, maxLat, minLon))
-      * 1000;
+  private findZoom(dist: number) {
     let zoom = 11;
     if (dist < 20480) zoom = 11;
     if (dist < 10240) zoom = 12;
@@ -237,7 +224,7 @@ export class MapViewComponent implements OnInit {
     if (dist < 160) zoom = 18;
     if (dist < 80) zoom = 19;
 
-    return {center: [(minLat + maxLat) / 2, (minLon + maxLon) / 2], zoom: zoom, trackBounds: {minLat: minLat, minLon: minLon, maxLat: maxLat, maxLon: maxLon}, trackSize: dist };
+    return zoom;
   }
 }
 
