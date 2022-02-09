@@ -14,7 +14,7 @@ export class OpenTxLogParser {
     let currentLog: Log|null = null;
     let prevRow: ILogRow|null = null;
     let startTimestamp: DateTime|null = null;
-    let home: LatLon = {lat:0,lon:0};
+    let home: LatLon|undefined;
     let index = 1;
 
     for (let i = 1; i < lines.length; i++){
@@ -29,7 +29,7 @@ export class OpenTxLogParser {
       typedRow.Date = DateTime.fromISO(row["Date"]);
       typedRow.Time = Duration.fromISOTime(row["Time"]);
       typedRow.timestamp = typedRow.Date.plus(typedRow.Time);
-      typedRow.rss1 = parseInt(row["1RSS(dB)"]);
+      typedRow.rss1 = parseInt(row["1RSS(dB)"]??row["RSSI(dB)"]);
       typedRow.rss2 = parseInt(row["2RSS(dB)"]);
       typedRow.rsnr = parseInt(row["RSNR(dB)"]);
       typedRow.rfmd = parseInt(row["RFMD"]);
@@ -45,17 +45,17 @@ export class OpenTxLogParser {
       typedRow.current = parseFloat(row["Curr(A)"]);
       typedRow.capacity = parseFloat(row["Capa(mAh)"]);
       typedRow.batteryPercent = Math.round(parseFloat(row["Bat_(%)"]) * 10)/10;
-      typedRow.pitchDeg = Math.round( parseFloat(row["Ptch(rad)"]) * 180 / Math.PI);
-      typedRow.rollDeg = Math.round(parseFloat(row["Roll(rad)"]) * 180 / Math.PI);
-      typedRow.yawDeg = Math.round(parseFloat(row["Yaw(rad)"]) * 180 / Math.PI);
+      typedRow.pitchDeg = Math.round( parseFloat(row["Ptch(rad)"]??row["Ptch(@)"]) * 180 / Math.PI);
+      typedRow.rollDeg = Math.round(parseFloat(row["Roll(rad)"]??row["Roll(@)"]) * 180 / Math.PI);
+      typedRow.yawDeg = Math.round(parseFloat(row["Yaw(rad)"]??row["Yaw(@)"]) * 180 / Math.PI);
       typedRow.aileron = Math.round((parseFloat(row["Ail"]) + 1024) * 100 / 2048);
       typedRow.throttle = Math.round((parseFloat(row["Thr"]) + 1024) * 100 / 2048);
       typedRow.rudder = Math.round((parseFloat(row["Rud"]) + 1024) * 100 / 2048);
       typedRow.elevator = Math.round((parseFloat(row["Ele"]) + 1024) * 100 / 2048);
       typedRow.sats = parseInt(row["Sats"]);
-      typedRow.altitude = Math.round(parseFloat(row["Alt(m)"])*10)/10;
+      typedRow.altitude = Math.round(parseFloat(row["Alt(m)"]??row["GAlt"]??row["GAlt(m)"])*10)/10;
       typedRow.gps = row["GPS"];
-      typedRow.gpsSpeed = Math.round(parseFloat(row["GSpd(kmh)"])*10)/10;
+      typedRow.gpsSpeed = Math.round(parseFloat(row["GSpd(kmh)"]??row["GSpd(kts)"])*10)/10;
       typedRow.distanceTraveled = 0;
       const coords = row["GPS"] as string;
       if (coords && coords.length > 5) {
@@ -77,9 +77,7 @@ export class OpenTxLogParser {
         logs.push(currentLog);
         startTimestamp = typedRow.timestamp;
         index = 1;
-        if (typedRow.position) {
-          home = typedRow.position;
-        }
+        home = undefined;
       }else {
         if (prevRow.position && typedRow.position) {
           typedRow.distanceTraveled = prevRow.distanceTraveled! +
@@ -87,6 +85,9 @@ export class OpenTxLogParser {
         }else {
           typedRow.distanceTraveled = prevRow.distanceTraveled;
         }
+      }
+      if (typedRow.position && !home) {
+        home = typedRow.position;
       }
       typedRow.index = index++;
 
