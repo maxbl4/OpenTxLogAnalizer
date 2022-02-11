@@ -30,13 +30,13 @@ import {GpxGenerator} from "../../services/gpx-generator";
           <div class="mb-3">
               <label for="exampleFormControlTextarea1" class="form-label">OSD Preview</label>
             <div class="osd-preview"
-                 [style.font-family]="layoutSettings.font" [style.font-size]="layoutSettings.fontSize+'px'"
                  [style.color]="'#'+layoutSettings.color"
-                 [style.width]="layoutSettings.width+'px'"
-                 [style.height]="layoutSettings.height+'px'"
                  [style.padding-left]="layoutSettings.x+'px'"
-                 [style.padding-bottom]="layoutSettings.height-layoutSettings.y+'px'">
-                <pre style="align-self: flex-end">{{osdLayoutPreview}}</pre>
+                 [style.padding-bottom]="layoutSettings.height-layoutSettings.y+'px'"
+                 [style.width]="layoutSettings.width+'px'"
+                 [style.height]="layoutSettings.height+'px'">
+                <pre style="align-self: flex-end"
+                     [style.font-family]="layoutSettings.font+'!important'" [style.font-size]="layoutSettings.fontSize+'px'">{{osdLayoutPreview}}</pre>
             </div>
           </div>
         </div>

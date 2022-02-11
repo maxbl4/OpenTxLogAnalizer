@@ -239,6 +239,7 @@ export interface StatDesc {
   name: string;
   field: string;
   lowIsBetter?: boolean;
+  invertOsdBar?: boolean;
 }
 
 export const knownStats: StatDesc[] = [
@@ -251,7 +252,7 @@ export const knownStats: StatDesc[] = [
   {name: "Sats Count", field: "sats"},
   {name: "Rx Battery", field: "rxBattery"},
   {name: "Current", field: "current", lowIsBetter: true},
-  {name: "Capacity", field: "capacity", lowIsBetter: true},
+  {name: "Capacity", field: "capacity", lowIsBetter: true, invertOsdBar: true},
   {name: "Power", field: "power", lowIsBetter: true},
   {name: "Watt hour per km", field: "wattPerKm", lowIsBetter: true},
   {name: "Watt hour per 10 km", field: "wattPer10Km", lowIsBetter: true},
