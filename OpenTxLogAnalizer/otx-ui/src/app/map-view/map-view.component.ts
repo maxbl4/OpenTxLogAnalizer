@@ -247,6 +247,7 @@ export const knownStats: StatDesc[] = [
   {name: "Speed", field: "gpsSpeed", numberFormat: ".1f"},
   {name: "Altitude", field: "altitude", numberFormat: ".1f"},
   {name: "V Speed m/s", field: "vSpeed", numberFormat: ".1f"},
+  {name: "V Speed m/s (iNav)", field: "vSpeedInav", numberFormat: ".1f"},
   {name: "3d Speed km/h", field: "3dSpeed", numberFormat: ".1f"},
   {name: "Pitch Degrees", field: "pitchDeg", numberFormat: ".1f"},
   {name: "Throttle %", field: "throttle", numberFormat: ".0f"},

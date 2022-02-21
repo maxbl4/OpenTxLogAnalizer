@@ -54,10 +54,11 @@ export class OpenTxLogParser {
       typedRow.elevator = Math.round((parseFloat(row["Ele"]) + 1024) * 100 / 2048);
       typedRow.sats = parseInt(row["Sats"]);
       typedRow.altitude = Math.round(parseFloat(row["Alt(m)"]??row["GAlt"]??row["GAlt(m)"])*10)/10;
+      typedRow.vSpeedInav = Math.round(parseFloat(row["VSpd(m/s)"]??0)*10)/10;
       typedRow.gps = row["GPS"];
       typedRow.gpsSpeed = Math.round(parseFloat(row["GSpd(kmh)"]??row["GSpd(kts)"])*10)/10;
       typedRow.distanceTraveled = 0;
-      typedRow.vSpeed = 0;
+      typedRow.vSpeedRaw = typedRow.vSpeed = 0;
       typedRow["3dSpeed"] = typedRow.gpsSpeed;
       const coords = row["GPS"] as string;
       if (coords && coords.length > 5) {
@@ -89,16 +90,17 @@ export class OpenTxLogParser {
           typedRow.distanceTraveled = prevRow.distanceTraveled;
         }
         if (prevRow.altitude && typedRow.altitude) {
-          const vSpeedAveraging = 3;
+          const vSpeedAveraging = 2;
           const tc = typedRow.timestamp.diff(startTimestamp!).as('seconds');
-          typedRow.vSpeed = Math.round(10 * (typedRow.altitude - prevRow.altitude) / (tc - prevRow.timecode!)) / 10;
+          typedRow.vSpeed = typedRow.vSpeedRaw = Math.round(10 * (typedRow.altitude - prevRow.altitude) / (tc - prevRow.timecode!)) / 10;
           if ((currentLog?.rows.length ?? 0) > vSpeedAveraging) {
             for (let j = 1; j <= vSpeedAveraging; j++) {
-              typedRow.vSpeed += currentLog!.rows[currentLog!.rows.length - j].vSpeed ?? 0;
+              typedRow.vSpeed += currentLog!.rows[currentLog!.rows.length - j].vSpeedRaw ?? 0;
             }
             typedRow.vSpeed /= (vSpeedAveraging + 1);
           }
-          typedRow["3dSpeed"] = Math.round(Math.sqrt(Math.pow(typedRow.gpsSpeed, 2) + Math.pow(typedRow.vSpeed * 3.6, 2)) * 10) / 10;
+          const vSpeed = typedRow.vSpeedInav ? typedRow.vSpeedInav : typedRow.vSpeed;
+          typedRow["3dSpeed"] = Math.round(Math.sqrt(Math.pow(typedRow.gpsSpeed, 2) + Math.pow(vSpeed * 3.6, 2)) * 10) / 10;
         }
       }
       if (typedRow.position && !home) {
@@ -351,6 +353,8 @@ export interface ILogRow {
   wattPer10Km?: number;
   estimatedRange?: number;
   estimatedFlightTime?: number;
+  vSpeedRaw?: number;
+  vSpeedInav?: number;
   vSpeed?: number;
   "3dSpeed"?: number;
   index: number;
@@ -441,6 +445,8 @@ export class LogRow implements ILogRow {
   wattPer10Km?: number;
   estimatedRange?: number;
   estimatedFlightTime?: number;
+  vSpeedRaw?: number;
+  vSpeedInav?: number;
   vSpeed?: number;
   "3dSpeed"?: number;
   index: number;
