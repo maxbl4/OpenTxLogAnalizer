@@ -28,7 +28,7 @@ import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
         <p><code>#!x:10,y:720,width:1280,height:720,font:Courier New,fontSize:28,color:ffffff</code></p>
         <p>All fields are optional, you can remove header if not used</p>
         <h3>Available fields</h3>
-        <p>gps, lat, lon, gpsSpeed, Sats, distanceToHome, distanceTraveled, rss1, rss2, rqly, rqlySum, rqlyOsd, rsnr, rfmd, tpwr, rxBattery, current, power, capacity, wattPerKm, estimatedRange, estimatedFlightTime, batteryPercent, pitchDeg, rollDeg, yawDeg, throttle, djiDelay, djiBitrate</p>
+        <p>gps, lat, lon, gpsSpeed, altitude, vSpeed, 3dSpeed, Sats, distanceToHome, distanceTraveled, rss1, rss2, rqly, rqlySum, rqlyOsd, rsnr, rfmd, tpwr, rxBattery, current, power, capacity, wattPerKm, estimatedRange, estimatedFlightTime, batteryPercent, pitchDeg, rollDeg, yawDeg, throttle, djiDelay, djiBitrate</p>
       </div>
     </ng-template>
     <div class="container-fluid">

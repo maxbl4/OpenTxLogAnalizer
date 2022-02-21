@@ -3,6 +3,7 @@ import {ILog, Log} from "./open-tx-log-parser";
 import {Duration} from "luxon";
 import {StatTriple} from "./IStats";
 import {knownStats} from "../app/map-view/map-view.component";
+import {format} from "d3-format";
 
 const osdHeaderRegex = /^#!.+?\n/gm;
 
@@ -79,13 +80,13 @@ Format: Marked, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
   }
 
   formatValue(field: string, value: any, padding: number, format: string, log: ILog) {
+    const statDef = knownStats.find(x => x.field == field);
     switch (format) {
       case "barReverse":
       case "bar":
         let lastMax = this.lastMaximum[field] ?? 0;
         lastMax--;
         this.lastMaximum[field] = lastMax;
-        const statDef = knownStats.find(x => x.field == field);
         const statData = <StatTriple>(<any>log.stats)[field];
         let normalizedValue = (value - statData.min)/statData.range;
         if (statDef?.invertOsdBar)
@@ -111,7 +112,7 @@ Format: Marked, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         //return "#".repeat(paddedValue) + "-".repeat(padding - paddedValue);
         return res;
       default:
-        return pad(value, padding);
+        return pad(value, padding, " ", statDef?.numberFormat);
     }
   }
 
@@ -128,10 +129,13 @@ function formatTime(d: Duration) {
   return t + "." + pad(Math.floor((d.milliseconds % 1000) / 10), 2, "0");
 }
 
-function pad(s?: any, n?: number, symbol: string = " ") {
+function pad(s?: any, n?: number, symbol: string = " ", numberFormat: string|undefined = undefined) {
   if (s === undefined) return "";
   if (n === undefined) return s;
-  s = s.toString();
+  if (typeof s === "number" && numberFormat)
+    s = format(numberFormat)(s);
+  else
+    s = s.toString();
   if (n > s.length)
     return symbol.repeat(n - s.length) + s;
   return s;

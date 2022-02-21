@@ -1,6 +1,8 @@
 ﻿export interface IStats {
   gpsSpeed: IStatTriple;
   altitude: IStatTriple;
+  vSpeed: IStatTriple;
+  "3dSpeed": IStatTriple;
   distanceToHome: IStatTriple;
   distanceTraveled: IStatTriple;
   sats: IStatTriple;
@@ -33,6 +35,8 @@ export class Stats implements IStats {
   }
 
   altitude: IStatTriple = new StatTriple();
+  vSpeed: IStatTriple = new StatTriple();
+  "3dSpeed": IStatTriple = new StatTriple();
   capacity: IStatTriple = new StatTriple();
   current: IStatTriple = new StatTriple();
   distanceToHome: IStatTriple = new StatTriple();

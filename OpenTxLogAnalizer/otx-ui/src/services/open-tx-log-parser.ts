@@ -57,6 +57,8 @@ export class OpenTxLogParser {
       typedRow.gps = row["GPS"];
       typedRow.gpsSpeed = Math.round(parseFloat(row["GSpd(kmh)"]??row["GSpd(kts)"])*10)/10;
       typedRow.distanceTraveled = 0;
+      typedRow.vSpeed = 0;
+      typedRow["3dSpeed"] = typedRow.gpsSpeed;
       const coords = row["GPS"] as string;
       if (coords && coords.length > 5) {
         const parts = coords.split(" ");
@@ -67,6 +69,7 @@ export class OpenTxLogParser {
         }
       }
       typedRow.calculate();
+      typedRow.index = index++;
 
       if (prevRow === null || (typedRow.timestamp.diff(prevRow.timestamp!).as('seconds') > 10)){
         if (currentLog && prevRow) {
@@ -85,17 +88,27 @@ export class OpenTxLogParser {
         }else {
           typedRow.distanceTraveled = prevRow.distanceTraveled;
         }
+        if (prevRow.altitude && typedRow.altitude) {
+          const vSpeedAveraging = 3;
+          const tc = typedRow.timestamp.diff(startTimestamp!).as('seconds');
+          typedRow.vSpeed = Math.round(10 * (typedRow.altitude - prevRow.altitude) / (tc - prevRow.timecode!)) / 10;
+          if ((currentLog?.rows.length ?? 0) > vSpeedAveraging) {
+            for (let j = 1; j <= vSpeedAveraging; j++) {
+              typedRow.vSpeed += currentLog!.rows[currentLog!.rows.length - j].vSpeed ?? 0;
+            }
+            typedRow.vSpeed /= (vSpeedAveraging + 1);
+          }
+          typedRow["3dSpeed"] = Math.round(Math.sqrt(Math.pow(typedRow.gpsSpeed, 2) + Math.pow(typedRow.vSpeed * 3.6, 2)) * 10) / 10;
+        }
       }
       if (typedRow.position && !home) {
         home = typedRow.position;
       }
-      typedRow.index = index++;
+      typedRow.timecode = typedRow.timestamp.diff(startTimestamp!).as('seconds');
 
       if (home && typedRow.position) {
         typedRow.distanceToHome = Math.round(Distance(home.lat, home.lon, typedRow.position.lat, typedRow.position.lon) * 1000);
       }
-
-      typedRow.timecode = typedRow.timestamp.diff(startTimestamp!).as('seconds');
 
       currentLog!.rows.push(typedRow);
       prevRow = typedRow;
@@ -153,6 +166,7 @@ const csvFieldMap = [
   {title:"TotalCapacity", field: "totalCapacity"},
   {title:"EstimatedRange", field: "estimatedRange"},
   {title:"EstimatedFlightTime", field: "estimatedFlightTime"},
+  {title:"Vertical Speed", field: "vSpeed"},
   {title:"Bat_(%)", field: "batteryPercent"},
   {title:"Ptch(rad)", field: "pitchDeg"},
   {title:"Roll(rad)", field: "rollDeg"},
@@ -337,6 +351,8 @@ export interface ILogRow {
   wattPer10Km?: number;
   estimatedRange?: number;
   estimatedFlightTime?: number;
+  vSpeed?: number;
+  "3dSpeed"?: number;
   index: number;
   timecode?: number;
   timestamp?: DateTime;
@@ -401,7 +417,7 @@ export class LogRow implements ILogRow {
     else this.power = 0;
 
     if (this.gpsSpeed) {
-      this.wattPerKm = Math.round(1 / this.gpsSpeed * this.power * 10) / 10;
+      this.wattPerKm = Math.round(1 / this.gpsSpeed * this.power * 100) / 100;
       this.wattPer10Km = Math.round(1 / this.gpsSpeed * this.power * 100) / 10;
     }else {
       this.wattPerKm = 0;
@@ -425,6 +441,8 @@ export class LogRow implements ILogRow {
   wattPer10Km?: number;
   estimatedRange?: number;
   estimatedFlightTime?: number;
+  vSpeed?: number;
+  "3dSpeed"?: number;
   index: number;
   timecode?: number;
   timestamp?: DateTime;

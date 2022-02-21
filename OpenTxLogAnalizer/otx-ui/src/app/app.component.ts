@@ -1,7 +1,6 @@
 import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import {GridApi, GridOptions} from "ag-grid-community";
 import {NgxFileDropEntry} from "ngx-file-drop";
-import {ILog} from "../services/open-tx-log-parser";
 import {DateTime} from "luxon";
 import {DataManager} from "../services/data-manager";
 import {PersistenceService} from "../services/persistence.service";
@@ -22,7 +21,8 @@ import {PersistenceService} from "../services/persistence.service";
         <ngx-file-drop dropZoneLabel="Drop files here" (onFileDrop)="openOtxLog($event)">
           <ng-template ngx-file-drop-content-tmp let-openFileSelector="openFileSelector">
             <ng-container *ngIf="data.currentLogProject?.otx?.name">{{data.currentLogProject?.otx?.name}}</ng-container>
-            <ng-container *ngIf="!data.currentLogProject?.otx?.name">Drop Open Tx log here</ng-container>
+            <ng-container *ngIf="!data.currentLogProject?.otx?.name">Drop Open Tx log here or</ng-container>
+            <button class="btn btn-sm btn-outline-primary ms-2" type="button" (click)="openFileSelector()">Browse</button>
           </ng-template>
         </ngx-file-drop>
       </div>
@@ -30,7 +30,8 @@ import {PersistenceService} from "../services/persistence.service";
         <ngx-file-drop dropZoneLabel="Drop files here" (onFileDrop)="addSrtLog($event)">
           <ng-template ngx-file-drop-content-tmp let-openFileSelector="openFileSelector">
             <ng-container *ngIf="data.currentLogProject?.srt?.name">{{data.currentLogProject?.srt?.name}}</ng-container>
-            <ng-container *ngIf="!data.currentLogProject?.srt?.name">DROP DJI SRT here</ng-container>
+            <ng-container *ngIf="!data.currentLogProject?.srt?.name">Drop DJI SRT here or</ng-container>
+            <button class="btn btn-sm btn-outline-primary ms-2" type="button" (click)="openFileSelector()">Browse</button>
           </ng-template>
         </ngx-file-drop>
       </div>
