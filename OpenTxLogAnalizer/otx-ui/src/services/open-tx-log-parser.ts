@@ -1,7 +1,7 @@
 import {DateTime, Duration} from "luxon";
 import {LatLon, Distance} from "gps";
 import {Injectable} from "@angular/core";
-import {statKeys, IStats, IStatTriple, Stats} from "./IStats";
+import {statKeys, IStats, Stats} from "./IStats";
 
 @Injectable()
 export class OpenTxLogParser {
@@ -59,6 +59,7 @@ export class OpenTxLogParser {
       typedRow.gpsSpeed = Math.round(parseFloat(row["GSpd(kmh)"]??row["GSpd(kts)"])*10)/10;
       typedRow.distanceTraveled = 0;
       typedRow.vSpeedRaw = typedRow.vSpeed = 0;
+      typedRow.cumulativeAscend = typedRow.cumulativeDescend = 0;
       typedRow["3dSpeed"] = typedRow.gpsSpeed;
       const coords = row["GPS"] as string;
       if (coords && coords.length > 5) {
@@ -82,6 +83,7 @@ export class OpenTxLogParser {
         startTimestamp = typedRow.timestamp;
         index = 1;
         home = undefined;
+        prevRow = null;
       }else {
         if (prevRow.position && typedRow.position) {
           typedRow.distanceTraveled = prevRow.distanceTraveled! +
@@ -89,19 +91,26 @@ export class OpenTxLogParser {
         }else {
           typedRow.distanceTraveled = prevRow.distanceTraveled;
         }
-        if (prevRow.altitude && typedRow.altitude) {
-          const vSpeedAveraging = 2;
-          const tc = typedRow.timestamp.diff(startTimestamp!).as('seconds');
-          typedRow.vSpeed = typedRow.vSpeedRaw = Math.round(10 * (typedRow.altitude - prevRow.altitude) / (tc - prevRow.timecode!)) / 10;
-          if ((currentLog?.rows.length ?? 0) > vSpeedAveraging) {
-            for (let j = 1; j <= vSpeedAveraging; j++) {
-              typedRow.vSpeed += currentLog!.rows[currentLog!.rows.length - j].vSpeedRaw ?? 0;
-            }
-            typedRow.vSpeed /= (vSpeedAveraging + 1);
-          }
-          const vSpeed = typedRow.vSpeedInav ? typedRow.vSpeedInav : typedRow.vSpeed;
-          typedRow["3dSpeed"] = Math.round(Math.sqrt(Math.pow(typedRow.gpsSpeed, 2) + Math.pow(vSpeed * 3.6, 2)) * 10) / 10;
+        const vSpeedAveraging = 2;
+        const tc = typedRow.timestamp.diff(startTimestamp!).as('seconds');
+        const altDiff = typedRow.altitude - prevRow.altitude!;
+        if (altDiff > 0) {
+          typedRow.cumulativeAscend = prevRow.cumulativeAscend! + altDiff;
+          typedRow.cumulativeDescend = prevRow.cumulativeDescend;
+        }else {
+          typedRow.cumulativeAscend = prevRow.cumulativeAscend;
+          typedRow.cumulativeDescend = prevRow.cumulativeDescend! + altDiff;
         }
+        typedRow.vSpeed = typedRow.vSpeedRaw = Math.round(10 * (altDiff) / (tc - prevRow.timecode!)) / 10;
+        if ((currentLog?.rows.length ?? 0) > vSpeedAveraging) {
+          for (let j = 1; j <= vSpeedAveraging; j++) {
+            typedRow.vSpeed += currentLog!.rows[currentLog!.rows.length - j].vSpeedRaw ?? 0;
+          }
+          typedRow.vSpeed /= (vSpeedAveraging + 1);
+        }
+        typedRow.vSpeed = Math.round(typedRow.vSpeed * 10) / 10;
+        const vSpeed = typedRow.vSpeedInav ? typedRow.vSpeedInav : typedRow.vSpeed;
+        typedRow["3dSpeed"] = Math.round(Math.sqrt(Math.pow(typedRow.gpsSpeed, 2) + Math.pow(vSpeed * 3.6, 2)) * 10) / 10;
       }
       if (typedRow.position && !home) {
         home = typedRow.position;
@@ -390,6 +399,8 @@ export interface ILogRow {
   gpsSpeed?: number;
   heading?: number;
   altitude?: number;
+  cumulativeAscend?: number;
+  cumulativeDescend?: number;
   sats?: number;
   rudder?: number;
   elevator?: number;
@@ -482,6 +493,8 @@ export class LogRow implements ILogRow {
   gpsSpeed?: number;
   heading?: number;
   altitude?: number;
+  cumulativeAscend?: number;
+  cumulativeDescend?: number;
   sats?: number;
   rudder?: number;
   elevator?: number;

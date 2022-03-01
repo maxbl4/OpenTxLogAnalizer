@@ -11,7 +11,7 @@ import {LogRow} from "../../services/open-tx-log-parser";
       <div class="grid-left-pane">
         <div class="mb-3">
           <label for="formGroupExampleInput" class="form-label">Value to draw</label>
-          <select class="form-select" multiple [(ngModel)]="selectedStat" (change)="drawTrack()" [size]="stats.length">
+          <select class="form-select" multiple [(ngModel)]="selectedStat" (change)="drawTrack()" [size]="15">
             <option [value]="s" *ngFor="let s of stats">{{s.name}}</option>
           </select>
         </div>
@@ -246,6 +246,7 @@ export interface StatDesc {
 export const knownStats: StatDesc[] = [
   {name: "Speed", field: "gpsSpeed", numberFormat: ".1f"},
   {name: "Altitude", field: "altitude", numberFormat: ".1f"},
+  {name: "Cumulative Ascend", field: "cumulativeAscend", numberFormat: ".0f"},
   {name: "V Speed m/s", field: "vSpeed", numberFormat: ".1f"},
   {name: "V Speed m/s (iNav)", field: "vSpeedInav", numberFormat: ".1f"},
   {name: "3d Speed km/h", field: "3dSpeed", numberFormat: ".1f"},

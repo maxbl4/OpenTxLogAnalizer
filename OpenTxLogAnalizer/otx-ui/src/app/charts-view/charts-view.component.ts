@@ -20,7 +20,7 @@ import {IStatTriple} from "../../services/IStats";
           <div class="mb-3">
             <label for="formGroupExampleInput" class="form-label">Value to draw
               <span class="badge bg-secondary" ngbTooltip="Ctrl+Click to select several values at once">?</span></label>
-            <select class="form-select" multiple [(ngModel)]="selectedStat" (change)="chartSelectionChanged()" [size]="stats.length">
+            <select class="form-select" multiple [(ngModel)]="selectedStat" (change)="chartSelectionChanged()" [size]="15">
               <option [value]="s" *ngFor="let s of stats">{{s.name}}</option>
             </select>
           </div>

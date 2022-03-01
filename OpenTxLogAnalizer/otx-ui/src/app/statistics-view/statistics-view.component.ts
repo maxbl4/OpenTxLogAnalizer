@@ -28,6 +28,18 @@ import {DataManager} from "../../services/data-manager";
               <td>{{data.selectedLog?.stats?.gpsSpeed?.max}}</td>
             </tr>
             <tr>
+              <td>Altitude, m</td>
+              <td>{{data.selectedLog?.stats?.altitude?.min}}</td>
+              <td>{{data.selectedLog?.stats?.altitude?.avg}}</td>
+              <td>{{data.selectedLog?.stats?.altitude?.max}}</td>
+            </tr>
+            <tr>
+              <td>Cumulative Ascend, m</td>
+              <td></td>
+              <td>{{data.selectedLog?.stats?.cumulativeAscend?.max}}</td>
+              <td></td>
+            </tr>
+            <tr>
               <td>Rx Battery, V</td>
               <td>{{data.selectedLog?.stats?.rxBattery?.min}}</td>
               <td>{{data.selectedLog?.stats?.rxBattery?.avg}}</td>
@@ -98,12 +110,6 @@ import {DataManager} from "../../services/data-manager";
               <td>{{data.selectedLog?.stats?.djiBitrate?.min}}</td>
               <td>{{data.selectedLog?.stats?.djiBitrate?.avg}}</td>
               <td>{{data.selectedLog?.stats?.djiBitrate?.max}}</td>
-            </tr>
-            <tr>
-              <td>Altitude, m</td>
-              <td>{{data.selectedLog?.stats?.altitude?.min}}</td>
-              <td>{{data.selectedLog?.stats?.altitude?.avg}}</td>
-              <td>{{data.selectedLog?.stats?.altitude?.max}}</td>
             </tr>
             <tr>
               <td>Distance to Home, meters</td>
